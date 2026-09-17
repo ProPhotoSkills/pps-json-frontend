@@ -29,6 +29,7 @@ const KIND_LABEL: Record<EditableField["kind"], string> = {
 
 export function ChapterEditor({
   path,
+  markup,
   fields,
   values,
   dirty,
@@ -38,9 +39,16 @@ export function ChapterEditor({
   onReset,
 }: Props) {
   const meta = parseChapterName(path.split("/")[1] ?? path);
+  const [tab, setTab] = useState<"preview" | "fields">("preview");
+
+  const previewHtml = useMemo(() => {
+    if (!markup) return "";
+    const live = fields.map((f) => ({ ...f, value: values[f.id] ?? f.value }));
+    return renderPreviewHtml(markup, values, chapterTitle(live, meta.slug.replace(/-/g, " ")));
+  }, [markup, values, fields, meta.slug]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-8 py-10">
+    <div className="mx-auto w-full max-w-4xl px-8 py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="label-eyebrow">
