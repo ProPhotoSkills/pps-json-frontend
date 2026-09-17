@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { RefreshCw, FolderTree, FileJson, LogOut, Hammer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectCard } from "@/components/redaktion/ConnectCard";
 import { ChapterEditor } from "@/components/redaktion/ChapterEditor";
