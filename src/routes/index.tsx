@@ -335,15 +335,25 @@ function Redaktion() {
             {scan?.globals.length ? (
               <>
                 <p className="label-eyebrow mt-6 px-2">Globale Exporte</p>
-                <div className="mt-2 flex flex-wrap gap-1 px-2">
+                <div className="mt-2 space-y-1">
                   {scan.globals.map((g) => (
-                    <Badge key={g.path} variant="secondary" className="font-mono text-[11px]">
-                      {g.path}
-                    </Badge>
+                    <button
+                      key={g.path}
+                      onClick={() => openChapter(g.path)}
+                      className={`flex w-full items-start gap-2 rounded-md px-3 py-2 text-left font-mono text-[11px] transition-colors ${
+                        g.path === activePath
+                          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                          : "hover:bg-sidebar-accent/60"
+                      }`}
+                    >
+                      <FileJson className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="leading-snug break-all">{g.path}</span>
+                    </button>
                   ))}
                 </div>
               </>
             ) : null}
+
           </div>
         </ScrollArea>
       </aside>
