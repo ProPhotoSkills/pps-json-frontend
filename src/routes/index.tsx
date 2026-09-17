@@ -373,6 +373,7 @@ function Redaktion() {
         ) : activePath && chapterFile ? (
           <ChapterEditor
             path={activePath}
+            markup={getChapterMarkup(chapterFile)?.markup ?? ""}
             fields={fields}
             values={values}
             dirty={dirty}
