@@ -173,7 +173,7 @@ function Redaktion() {
 
       const changes: Record<string, string> = {};
       for (const key of Object.keys(values)) {
-        if (values[key] !== original[key]) changes[key] = values[key];
+        if (values[key] !== original[key]) changes[key] = values[key]!;
       }
       const nextMarkup = applyFields(entry.markup, changes);
       const nextFile: ChapterFile = {
