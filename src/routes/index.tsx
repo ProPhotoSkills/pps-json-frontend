@@ -209,6 +209,8 @@ function Redaktion() {
       const folder = activePath.split("/")[0]!;
       const cat = refreshed.categories.find((c) => c.name === folder);
       if (cat) await doRebuild(cfg, cat);
+      else await doRebuildAll(cfg, refreshed.categories);
+
     } catch (err) {
       toast.error(describe(err));
     } finally {
