@@ -188,7 +188,8 @@ function Redaktion() {
       toast.success("Kapitel als neuer Commit gespeichert.");
 
       const refreshed = await runScan(cfg);
-      const cat = refreshed.categories.find((c) => c.name === activePath.split("/")[0]);
+      const folder = activePath.split("/")[0]!;
+      const cat = refreshed.categories.find((c) => c.name === folder);
       if (cat) await doRebuild(cfg, cat);
     } catch (err) {
       toast.error(describe(err));
@@ -299,7 +300,7 @@ function Redaktion() {
                         }`}
                       >
                         <FileJson className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                        <span className="leading-snug">{meta.slug.replace(/-/g, " ")}</span>
+                        <span className="leading-snug">{meta.slug?.replace(/-/g, " ")}</span>
                       </button>
                     );
                   })}

@@ -178,7 +178,7 @@ function setAtPath(root: unknown, path: (string | number)[], value: string) {
     cur = cur[path[i]] as Record<string | number, unknown>;
     if (!cur) return;
   }
-  cur[path[path.length - 1]] = value;
+  cur[path[path.length - 1]!] = value;
 }
 
 /** Schreibt geänderte Feldwerte zurück in den Block-String. */
@@ -201,7 +201,7 @@ export function applyFields(markup: string, changes: Record<string, string>): st
   blocks.forEach((block, index) => {
     const fields = byBlock.get(index);
     if (!fields) return;
-    for (const field of fields) setAtPath(block.attrs, field.path, changes[field.id]);
+    for (const field of fields) setAtPath(block.attrs, field.path, changes[field.id]!);
     result += markup.slice(cursor, block.jsonStart) + JSON.stringify(block.attrs);
     cursor = block.jsonEnd;
   });
@@ -213,7 +213,8 @@ export function applyFields(markup: string, changes: Record<string, string>): st
 export function getChapterMarkup(file: ChapterFile): { postId: string; markup: string } | null {
   const entries = Object.entries(file.data ?? {});
   if (!entries.length) return null;
-  return { postId: entries[0][0], markup: entries[0][1] };
+  const [postId, markup] = entries[0]!;
+  return { postId, markup };
 }
 
 export function stripHtml(value: string): string {
@@ -241,5 +242,5 @@ export function parseChapterName(fileName: string) {
   const base = fileName.replace(/\.json$/i, "");
   const m = base.match(/^t(\d+)_l(\d+)_(.+)$/i);
   if (!m) return { modul: null, kapitel: null, slug: base, base };
-  return { modul: Number(m[1]), kapitel: Number(m[2]), slug: m[3], base };
+  return { modul: Number(m[1]), kapitel: Number(m[2]), slug: m[3]!, base };
 }

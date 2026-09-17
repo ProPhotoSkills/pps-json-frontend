@@ -23,7 +23,8 @@ export function deriveScan(tree: TreeEntry[]): Scan {
     if (entry.type !== "blob") continue;
     const parts = entry.path.split("/");
     if (parts.length !== 2) continue;
-    const [folder, fileName] = parts;
+    const folder = parts[0]!;
+    const fileName = parts[1]!;
 
     if (GLOBAL_FOLDERS.includes(folder.toLowerCase())) {
       if (fileName.toLowerCase().endsWith(".json")) {
@@ -41,7 +42,7 @@ export function deriveScan(tree: TreeEntry[]): Scan {
   for (const [folder, entries] of byFolder) {
     const chapters = entries
       .filter((e) => e.path.toLowerCase().endsWith(".json"))
-      .map((e) => ({ path: e.path, fileName: e.path.split("/")[1] }))
+      .map((e) => ({ path: e.path, fileName: e.path.split("/")[1]! }))
       .sort((a, b) => a.fileName.localeCompare(b.fileName));
     if (!chapters.length) continue;
 

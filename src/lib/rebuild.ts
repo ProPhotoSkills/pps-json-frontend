@@ -22,7 +22,7 @@ export async function rebuildCategory(
   const total = category.chapters.length;
 
   for (let i = 0; i < total; i++) {
-    const chapter = category.chapters[i];
+    const chapter = category.chapters[i]!;
     const meta = parseChapterName(chapter.fileName);
     try {
       const { text } = await fetchFile(cfg, chapter.path);
