@@ -70,7 +70,35 @@ export function ChapterEditor({
         </div>
       </div>
 
-      {fields.length === 0 ? (
+      <div className="mt-6 inline-flex rounded-lg border border-border bg-muted/40 p-1">
+        <button
+          onClick={() => setTab("preview")}
+          className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
+            tab === "preview" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          HTML-Vorschau
+        </button>
+        <button
+          onClick={() => setTab("fields")}
+          className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
+            tab === "fields" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          Inhalte bearbeiten
+        </button>
+      </div>
+
+      {tab === "preview" ? (
+        <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
+          <iframe
+            title="Kapitelvorschau"
+            srcDoc={previewHtml}
+            sandbox=""
+            className="h-[75vh] w-full border-0 bg-white"
+          />
+        </div>
+      ) : fields.length === 0 ? (
         <p className="mt-10 text-sm text-muted-foreground">
           In diesem Kapitel wurden keine editierbaren Inhalte gefunden.
         </p>
