@@ -254,6 +254,15 @@ function Redaktion() {
             <Button
               size="sm"
               variant="ghost"
+              disabled={scanning || rebuilding}
+              onClick={() => doRebuildAll(cfg, categories)}
+              title="Alle Kategorie-Übersichten neu bauen"
+            >
+              <Hammer className="size-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
               onClick={() => {
                 setCfg(null);
                 setScan(null);
