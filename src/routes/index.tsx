@@ -164,6 +164,24 @@ function Redaktion() {
     }
   };
 
+  const doRebuildAll = async (config: RepoConfig, cats: Category[]) => {
+    if (!cats.length) return;
+    setRebuilding(true);
+    try {
+      let total = 0;
+      for (const cat of cats) {
+        const result = await rebuildCategory(config, cat);
+        total += result.chapters;
+      }
+      toast.success(`${cats.length} Übersichten neu gebaut (${total} Kapitel).`);
+    } catch (err) {
+      toast.error(`Rebuild fehlgeschlagen: ${describe(err)}`);
+    } finally {
+      setRebuilding(false);
+    }
+  };
+
+
   const handleSave = async () => {
     if (!cfg || !activePath || !chapterFile) return;
     setSaving(true);
