@@ -1,13 +1,16 @@
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import type { EditableField } from "@/lib/divi";
-import { parseChapterName } from "@/lib/divi";
+import { chapterTitle, parseChapterName } from "@/lib/divi";
+import { renderPreviewHtml } from "@/lib/preview";
 
 type Props = {
   path: string;
+  markup: string;
   fields: EditableField[];
   values: Record<string, string>;
   dirty: boolean;
