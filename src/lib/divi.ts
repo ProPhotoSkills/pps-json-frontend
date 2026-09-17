@@ -77,7 +77,7 @@ function scanBlocks(markup: string): BlockMatch[] {
 
     const raw = markup.slice(jsonStart, i);
     try {
-      blocks.push({ name, attrs: JSON.parse(raw), jsonStart, jsonEnd: i });
+      blocks.push({ name: name!, attrs: JSON.parse(raw), jsonStart, jsonEnd: i });
     } catch {
       // Kein valides JSON -> Block überspringen, Markup bleibt unangetastet.
     }
@@ -175,7 +175,7 @@ export function extractFields(markup: string): EditableField[] {
 function setAtPath(root: unknown, path: (string | number)[], value: string) {
   let cur: Record<string | number, unknown> = root as Record<string | number, unknown>;
   for (let i = 0; i < path.length - 1; i++) {
-    cur = cur[path[i]] as Record<string | number, unknown>;
+    cur = cur[path[i]!] as Record<string | number, unknown>;
     if (!cur) return;
   }
   cur[path[path.length - 1]!] = value;
