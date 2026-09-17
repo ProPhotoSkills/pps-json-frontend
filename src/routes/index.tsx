@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { RefreshCw, FolderTree, FileJson, LogOut, Hammer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectCard } from "@/components/redaktion/ConnectCard";
 import { ChapterEditor } from "@/components/redaktion/ChapterEditor";
@@ -164,6 +164,24 @@ function Redaktion() {
     }
   };
 
+  const doRebuildAll = async (config: RepoConfig, cats: Category[]) => {
+    if (!cats.length) return;
+    setRebuilding(true);
+    try {
+      let total = 0;
+      for (const cat of cats) {
+        const result = await rebuildCategory(config, cat);
+        total += result.chapters;
+      }
+      toast.success(`${cats.length} Übersichten neu gebaut (${total} Kapitel).`);
+    } catch (err) {
+      toast.error(`Rebuild fehlgeschlagen: ${describe(err)}`);
+    } finally {
+      setRebuilding(false);
+    }
+  };
+
+
   const handleSave = async () => {
     if (!cfg || !activePath || !chapterFile) return;
     setSaving(true);
@@ -191,6 +209,8 @@ function Redaktion() {
       const folder = activePath.split("/")[0]!;
       const cat = refreshed.categories.find((c) => c.name === folder);
       if (cat) await doRebuild(cfg, cat);
+      else await doRebuildAll(cfg, refreshed.categories);
+
     } catch (err) {
       toast.error(describe(err));
     } finally {
@@ -230,6 +250,15 @@ function Redaktion() {
             >
               <RefreshCw className="size-3.5" />
               {scanning ? "Scanne…" : "Rescan & Rebuild"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={scanning || rebuilding}
+              onClick={() => doRebuildAll(cfg, categories)}
+              title="Alle Kategorie-Übersichten neu bauen"
+            >
+              <Hammer className="size-3.5" />
             </Button>
             <Button
               size="sm"
@@ -315,15 +344,25 @@ function Redaktion() {
             {scan?.globals.length ? (
               <>
                 <p className="label-eyebrow mt-6 px-2">Globale Exporte</p>
-                <div className="mt-2 flex flex-wrap gap-1 px-2">
+                <div className="mt-2 space-y-1">
                   {scan.globals.map((g) => (
-                    <Badge key={g.path} variant="secondary" className="font-mono text-[11px]">
-                      {g.path}
-                    </Badge>
+                    <button
+                      key={g.path}
+                      onClick={() => openChapter(g.path)}
+                      className={`flex w-full items-start gap-2 rounded-md px-3 py-2 text-left font-mono text-[11px] transition-colors ${
+                        g.path === activePath
+                          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                          : "hover:bg-sidebar-accent/60"
+                      }`}
+                    >
+                      <FileJson className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="leading-snug break-all">{g.path}</span>
+                    </button>
                   ))}
                 </div>
               </>
             ) : null}
+
           </div>
         </ScrollArea>
       </aside>
