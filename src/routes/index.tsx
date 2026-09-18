@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, FolderTree, FileJson, LogOut, Hammer } from "lucide-react";
+import { RefreshCw, FolderTree, LogOut, Hammer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +21,7 @@ import {
   applyFields,
   extractFields,
   getChapterMarkup,
+  chapterThumbnail,
   parseChapterName,
   type ChapterFile,
   type EditableField,
@@ -73,6 +74,9 @@ function Redaktion() {
   const [loadingChapter, setLoadingChapter] = useState(false);
   const [saving, setSaving] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
+  const [chapterImages, setChapterImages] = useState<Record<string, string>>({});
+  const [headerMarkups, setHeaderMarkups] = useState<string[]>([]);
+  const [footerMarkups, setFooterMarkups] = useState<string[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem(SETTINGS_KEY);
@@ -93,6 +97,36 @@ function Redaktion() {
       const result = deriveScan(tree);
       setScan(result);
       setActiveCategory((current) => current ?? result.categories[0]?.name ?? null);
+
+      const chapterPaths = result.categories.flatMap((item) => item.chapters.map((chapter) => chapter.path));
+      const chapterEntries = await Promise.all(
+        chapterPaths.map(async (path) => {
+          try {
+            const { text } = await fetchFile(config, path);
+            const parsed = JSON.parse(text) as ChapterFile;
+            const entry = getChapterMarkup(parsed);
+            const image = entry ? chapterThumbnail(extractFields(entry.markup)) : null;
+            return image ? ([path, image] as const) : null;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      setChapterImages(Object.fromEntries(chapterEntries.filter((item) => item !== null)));
+
+      const globalEntries = await Promise.all(
+        result.globals.map(async (item) => {
+          try {
+            const { text } = await fetchFile(config, item.path);
+            const parsed = JSON.parse(text) as ChapterFile;
+            return { group: item.group.toLowerCase(), markup: getChapterMarkup(parsed)?.markup ?? "" };
+          } catch {
+            return { group: item.group.toLowerCase(), markup: "" };
+          }
+        }),
+      );
+      setHeaderMarkups(globalEntries.filter((item) => item.group === "header" && item.markup).map((item) => item.markup));
+      setFooterMarkups(globalEntries.filter((item) => item.group === "footer" && item.markup).map((item) => item.markup));
       return result;
     } finally {
       setScanning(false);
@@ -223,7 +257,7 @@ function Redaktion() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <aside className="flex w-80 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
         <div className="border-b border-sidebar-border px-5 py-5">
           <p className="label-eyebrow">Redaktionssystem</p>
@@ -315,21 +349,33 @@ function Redaktion() {
                     <Hammer className="size-3.5" />
                   </Button>
                 </div>
-                <div className="mt-2 space-y-1">
+                <div className="mt-2 space-y-2">
                   {category.chapters.map((chapter) => {
                     const meta = parseChapterName(chapter.fileName);
                     return (
                       <button
                         key={chapter.path}
                         onClick={() => openChapter(chapter.path)}
-                        className={`flex w-full items-start gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                        className={`grid w-full grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-3 rounded-md p-2 text-left text-sm transition-colors ${
                           chapter.path === activePath
                             ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                             : "hover:bg-sidebar-accent/60"
                         }`}
                       >
-                        <FileJson className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                        <span className="leading-snug">{meta.slug?.replace(/-/g, " ")}</span>
+                        <span className="h-12 w-[3.75rem] overflow-hidden rounded-sm bg-muted">
+                          {chapterImages[chapter.path] ? (
+                            <img
+                              src={chapterImages[chapter.path]}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="grid h-full place-items-center font-mono text-xs text-muted-foreground">
+                              {meta.kapitel !== null ? String(meta.kapitel).padStart(2, "0") : "JSON"}
+                            </span>
+                          )}
+                        </span>
+                        <span className="min-w-0 leading-snug">{meta.slug?.replace(/-/g, " ")}</span>
                       </button>
                     );
                   })}
@@ -355,7 +401,7 @@ function Redaktion() {
                           : "hover:bg-sidebar-accent/60"
                       }`}
                     >
-                      <FileJson className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="mt-0.5 size-2 shrink-0 rounded-full bg-primary" />
                       <span className="leading-snug break-all">{g.path}</span>
                     </button>
                   ))}
@@ -374,6 +420,8 @@ function Redaktion() {
           <ChapterEditor
             path={activePath}
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
+            headerMarkups={headerMarkups}
+            footerMarkups={footerMarkups}
             fields={fields}
             values={values}
             dirty={dirty}
