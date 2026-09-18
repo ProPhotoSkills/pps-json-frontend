@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "86e9a19a-cb14-4367-a6cc-c9b2a9d39669",
+  "asset_id": "a1dece81-0ce9-40d2-895a-dcff0c8fe730",
   "project_id": "f7ded99e-97bd-4e68-ac53-dc6228c494d0",
-  "url": "/__l5e/assets-v1/86e9a19a-cb14-4367-a6cc-c9b2a9d39669/jquery.min.js",
-  "r2_key": "a/v1/f7ded99e-97bd-4e68-ac53-dc6228c494d0/86e9a19a-cb14-4367-a6cc-c9b2a9d39669/jquery.min.js",
+  "url": "/__l5e/assets-v1/a1dece81-0ce9-40d2-895a-dcff0c8fe730/jquery.min.js",
+  "r2_key": "a/v1/f7ded99e-97bd-4e68-ac53-dc6228c494d0/a1dece81-0ce9-40d2-895a-dcff0c8fe730/jquery.min.js",
   "original_filename": "jquery.min.js",
   "size": 87553,
-  "content_type": "text/plain",
-  "created_at": "2026-09-18T14:32:50Z"
+  "content_type": "application/javascript",
+  "created_at": "2026-09-18T14:36:50Z"
 }
