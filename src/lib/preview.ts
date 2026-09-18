@@ -5,7 +5,7 @@
  */
 
 import { extractFields, type EditableField } from "./divi";
-import { renderPpsAssetHeadTags } from "./siteAssets";
+import { renderPpsAssetHeadTags, renderPpsAssetScriptTags } from "./siteAssets";
 
 function esc(value: string): string {
   return value
@@ -145,5 +145,7 @@ ${renderPpsAssetHeadTags()}
 ${header ? `<header class="pps-site-header">${header}</header>` : ""}
 <main class="et_pb_section">${body || '<section class="content-block"><p class="empty">Keine darstellbaren Inhalte gefunden.</p></section>'}</main>
 ${footer ? `<footer class="pps-site-footer">${footer}</footer>` : ""}
+<div id="google_translate_element" style="display:none;"></div>
+${renderPpsAssetScriptTags()}
 </div></div></body></html>`;
 }
