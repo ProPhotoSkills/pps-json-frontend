@@ -5,9 +5,7 @@
  */
 
 import { extractFields, type EditableField } from "./divi";
-import siteCss from "@/assets/pps-site.css.asset.json";
-import moduleWoff from "@/assets/modules.woff.asset.json";
-import moduleTtf from "@/assets/modules.ttf.asset.json";
+import { renderPpsAssetHeadTags } from "./siteAssets";
 
 function esc(value: string): string {
   return value
@@ -115,16 +113,12 @@ export function renderFullPageHtml(
   const header = headerMarkups.map((part) => renderMarkup(part, {})).join("\n");
   const body = renderMarkup(markup, values);
   const footer = footerMarkups.map((part) => renderMarkup(part, {})).join("\n");
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const assetUrl = (u: string) => (u.startsWith("/") ? origin + u : u);
 
   return `<!DOCTYPE html>
 <html lang="de"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="stylesheet" href="${assetUrl(siteCss.url)}" />
+${renderPpsAssetHeadTags()}
 <style>
-  @font-face { font-family:"ETmodules"; font-style:normal; font-weight:400;
-    src:url("${assetUrl(moduleWoff.url)}") format("woff"), url("${assetUrl(moduleTtf.url)}") format("truetype"); }
   :root { color-scheme: light; }
   * { box-sizing:border-box; }
   body { margin:0; background:#fff; }

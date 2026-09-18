@@ -1,5 +1,7 @@
 /** Generiert die Kapitelübersicht <kategorie>_kapitel.html aus dem aktuellen Dateibestand. */
 
+import { renderPpsAssetHeadTags, renderPpsAssetScriptTags } from "./siteAssets";
+
 export type OverviewChapter = {
   fileName: string;
   title: string;
@@ -51,6 +53,7 @@ export function buildOverviewHtml(category: string, chapters: OverviewChapter[])
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(category)} – Kapitelübersicht</title>
+${renderPpsAssetHeadTags()}
 </head>
 <body style="margin:0;background:#faf8f4;">
   <main style="max-width:1100px;margin:0 auto;padding:56px 24px;">
@@ -60,6 +63,8 @@ export function buildOverviewHtml(category: string, chapters: OverviewChapter[])
 ${cards}
     </div>
   </main>
+  <div id="google_translate_element" style="display:none;"></div>
+  ${renderPpsAssetScriptTags()}
 </body>
 </html>
 `;
