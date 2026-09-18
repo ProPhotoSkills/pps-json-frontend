@@ -121,10 +121,10 @@ export function renderFullPageHtml(
   return `<!DOCTYPE html>
 <html lang="de"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="stylesheet" href="${siteCss.url}" />
+<link rel="stylesheet" href="${assetUrl(siteCss.url)}" />
 <style>
   @font-face { font-family:"ETmodules"; font-style:normal; font-weight:400;
-    src:url("${moduleWoff.url}") format("woff"), url("${moduleTtf.url}") format("truetype"); }
+    src:url("${assetUrl(moduleWoff.url)}") format("woff"), url("${assetUrl(moduleTtf.url)}") format("truetype"); }
   :root { color-scheme: light; }
   * { box-sizing:border-box; }
   body { margin:0; background:#fff; }
