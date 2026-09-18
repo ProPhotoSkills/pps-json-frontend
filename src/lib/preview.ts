@@ -5,6 +5,9 @@
  */
 
 import { extractFields, type EditableField } from "./divi";
+import siteCss from "@/assets/pps-site.css.asset.json";
+import moduleWoff from "@/assets/modules.woff.asset.json";
+import moduleTtf from "@/assets/modules.ttf.asset.json";
 
 function esc(value: string): string {
   return value
@@ -116,38 +119,35 @@ export function renderFullPageHtml(
   return `<!DOCTYPE html>
 <html lang="de"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="${siteCss.url}" />
 <style>
+  @font-face { font-family:"ETmodules"; font-style:normal; font-weight:400;
+    src:url("${moduleWoff.url}") format("woff"), url("${moduleTtf.url}") format("truetype"); }
   :root { color-scheme: light; }
   * { box-sizing:border-box; }
-  body { margin:0; background:#fff; color:#1c1a17;
-    font:400 16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; }
+  body { margin:0; background:#fff; }
   .page { min-height:100vh; display:flex; flex-direction:column; }
-  header, main, footer { width:100%; }
+  .pps-site-header, main, .pps-site-footer { width:100%; }
   main { flex:1; }
-  .content-block { max-width:1040px; margin:0 auto; padding:32px 40px; }
+  .content-block { max-width:1080px; margin:0 auto; padding:32px 40px; }
   .content-block + .content-block { padding-top:12px; }
-  header { border-bottom:1px solid #e6e0d6; background:#faf8f4; }
-  header .content-block { padding-top:22px; padding-bottom:22px; }
-  footer { margin-top:48px; border-top:1px solid #ded8cd; background:#24231f; color:#f9f7f2; }
-  footer .content-block { padding-top:28px; padding-bottom:28px; }
-  h1, h2, h3 { font-family:Georgia,serif; }
-  h1 { font-size:clamp(30px,5vw,52px); line-height:1.1; margin:0 0 24px; }
-  h2 { font-size:clamp(24px,3.5vw,38px); line-height:1.2; margin:0 0 16px; }
+  .pps-site-header { border-bottom:1px solid #e6e0d6; background:#fff; }
+  .pps-site-header .content-block { padding-top:22px; padding-bottom:22px; }
+  .pps-site-footer { margin-top:48px; background:#1f1f1f; color:#f2f2f2; }
+  .pps-site-footer a { color:#f2f2f2; }
+  .pps-site-footer .content-block { padding-top:28px; padding-bottom:28px; }
   figure { margin:0 0 20px; }
-  img { width:100%; max-height:620px; object-fit:cover; display:block; }
+  figure img { width:100%; max-height:620px; object-fit:cover; display:block; }
   figcaption { font-size:12px; color:#8b8175; margin-top:6px; }
-  p { margin:0 0 12px; }
-  .rich { margin-bottom:12px; }
-  .rich img { margin:12px 0; }
-  a { color:#8a6b2f; }
-  .btn { display:inline-block; background:#1c1a17; color:#fff; border-radius:4px;
-    padding:10px 20px; font-size:14px; text-decoration:none; }
+  .rich img { margin:12px 0; max-width:100%; height:auto; }
+  .btn { display:inline-block; background:#1f1f1f; color:#fff; border-radius:4px;
+    padding:10px 24px; font-size:14px; text-decoration:none; }
   .empty { color:#8b8175; }
   @media (max-width:640px) { .content-block { padding:24px 18px; } }
 </style></head>
-<body><div class="page">
-${header ? `<header>${header}</header>` : ""}
-<main>${body || '<section class="content-block"><p class="empty">Keine darstellbaren Inhalte gefunden.</p></section>'}</main>
-${footer ? `<footer>${footer}</footer>` : ""}
-</div></body></html>`;
+<body class="et-db"><div id="et-boc" class="et-boc"><div class="et-l page">
+${header ? `<header class="pps-site-header">${header}</header>` : ""}
+<main class="et_pb_section">${body || '<section class="content-block"><p class="empty">Keine darstellbaren Inhalte gefunden.</p></section>'}</main>
+${footer ? `<footer class="pps-site-footer">${footer}</footer>` : ""}
+</div></div></body></html>`;
 }
