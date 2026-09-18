@@ -88,7 +88,7 @@ function renderBlock(block: Block, values: Record<string, string>): string {
     : block.name.toLowerCase().includes("footer")
       ? " site-footer"
       : "";
-  return `<section class="content-block${role}">${parts.join("\n")}</section>`;
+  return `<section class="content-block et_pb_module et_pb_text${role}"><div class="et_pb_text_inner">${parts.join("\n")}</div></section>`;
 }
 
 function renderMarkup(markup: string, values: Record<string, string>): string {
@@ -115,6 +115,8 @@ export function renderFullPageHtml(
   const header = headerMarkups.map((part) => renderMarkup(part, {})).join("\n");
   const body = renderMarkup(markup, values);
   const footer = footerMarkups.map((part) => renderMarkup(part, {})).join("\n");
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const assetUrl = (u: string) => (u.startsWith("/") ? origin + u : u);
 
   return `<!DOCTYPE html>
 <html lang="de"><head><meta charset="utf-8" />
