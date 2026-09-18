@@ -5,12 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import type { EditableField } from "@/lib/divi";
-import { chapterTitle, parseChapterName } from "@/lib/divi";
-import { renderPreviewHtml } from "@/lib/preview";
+import { parseChapterName } from "@/lib/divi";
+import { renderFullPageHtml } from "@/lib/preview";
 
 type Props = {
   path: string;
   markup: string;
+  headerMarkups: string[];
+  footerMarkups: string[];
   fields: EditableField[];
   values: Record<string, string>;
   dirty: boolean;
@@ -30,6 +32,8 @@ const KIND_LABEL: Record<EditableField["kind"], string> = {
 export function ChapterEditor({
   path,
   markup,
+  headerMarkups,
+  footerMarkups,
   fields,
   values,
   dirty,
@@ -43,12 +47,11 @@ export function ChapterEditor({
 
   const previewHtml = useMemo(() => {
     if (!markup) return "";
-    const live = fields.map((f) => ({ ...f, value: values[f.id] ?? f.value }));
-    return renderPreviewHtml(markup, values, chapterTitle(live, meta.slug.replace(/-/g, " ")));
-  }, [markup, values, fields, meta.slug]);
+    return renderFullPageHtml(markup, values, headerMarkups, footerMarkups);
+  }, [markup, values, headerMarkups, footerMarkups]);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-8 py-10">
+    <div className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="label-eyebrow">
@@ -90,12 +93,12 @@ export function ChapterEditor({
       </div>
 
       {tab === "preview" ? (
-        <div className="mt-6 overflow-hidden rounded-xl border border-border bg-background">
+        <div className="mt-6 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
           <iframe
             title="Kapitelvorschau"
             srcDoc={previewHtml}
             sandbox=""
-            className="h-[75vh] w-full border-0 bg-white"
+            className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />
         </div>
       ) : fields.length === 0 ? (
