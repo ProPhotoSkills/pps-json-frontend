@@ -2,19 +2,21 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { renderHtmlFilePreview } from "@/lib/preview";
+import type { HeadValues } from "@/lib/headSettings";
 
 type Props = {
   path: string;
   html: string;
   footerMarkups: string[];
+  headValues: HeadValues;
 };
 
-export function HtmlViewer({ path, html, footerMarkups }: Props) {
+export function HtmlViewer({ path, html, footerMarkups, headValues }: Props) {
   const [tab, setTab] = useState<"preview" | "source">("preview");
   const fileName = path.split("/").pop() ?? path;
   const previewHtml = useMemo(
-    () => renderHtmlFilePreview(html, footerMarkups),
-    [html, footerMarkups],
+    () => renderHtmlFilePreview(html, footerMarkups, headValues),
+    [html, footerMarkups, headValues],
   );
 
   return (

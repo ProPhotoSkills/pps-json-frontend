@@ -6,6 +6,7 @@
 
 import { extractFields, type EditableField } from "./divi";
 import { renderPpsAssetHeadTags, renderPpsAssetScriptTags } from "./siteAssets";
+import { renderManagedHead, type HeadValues } from "./headSettings";
 
 function esc(value: string): string {
   return value
@@ -96,8 +97,13 @@ function renderMarkup(markup: string, values: Record<string, string>): string {
 }
 
 /** Ergänzt eine bestehende HTML-Datei für die RDS-Vorschau um PPS-CSS und den gewählten Footer. */
-export function renderHtmlFilePreview(html: string, footerMarkups: string[] = []): string {
+export function renderHtmlFilePreview(
+  html: string,
+  footerMarkups: string[] = [],
+  headValues?: HeadValues,
+): string {
   const assetHead = renderPpsAssetHeadTags();
+  const managedHead = headValues ? renderManagedHead(headValues) : "";
   const hasFooter = /<footer\b|class=["'][^"']*(?:pps-site-footer|et-l--footer)/i.test(html);
   const renderedFooter = footerMarkups.map((part) => renderMarkup(part, {})).join("\n");
   const footer = !hasFooter && renderedFooter
@@ -106,9 +112,9 @@ export function renderHtmlFilePreview(html: string, footerMarkups: string[] = []
 
   let preview = html;
   if (/<\/head\s*>/i.test(preview)) {
-    preview = preview.replace(/<\/head\s*>/i, `${assetHead}\n</head>`);
+    preview = preview.replace(/<\/head\s*>/i, `${assetHead}\n${managedHead}\n</head>`);
   } else {
-    preview = `${assetHead}\n${preview}`;
+    preview = `${assetHead}\n${managedHead}\n${preview}`;
   }
 
   if (footer) {
@@ -136,6 +142,7 @@ export function renderFullPageHtml(
   values: Record<string, string> = {},
   headerMarkups: string[] = [],
   footerMarkups: string[] = [],
+  headValues?: HeadValues,
 ): string {
   const header = headerMarkups.map((part) => renderMarkup(part, {})).join("\n");
   const body = renderMarkup(markup, values);
@@ -145,6 +152,7 @@ export function renderFullPageHtml(
 <html lang="de"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 ${renderPpsAssetHeadTags()}
+${headValues ? renderManagedHead(headValues) : ""}
 <style>
   :root { color-scheme: light; }
   * { box-sizing:border-box; }

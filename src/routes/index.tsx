@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Check, FolderTree, Hammer, LogOut, Pencil, RefreshCw } from "lucide-react";
+import { Check, Code2, FolderTree, Hammer, LogOut, Pencil, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectCard } from "@/components/redaktion/ConnectCard";
 import { ChapterEditor } from "@/components/redaktion/ChapterEditor";
 import { HtmlViewer } from "@/components/redaktion/HtmlViewer";
+import { HeadSettingsEditor } from "@/components/redaktion/HeadSettingsEditor";
 import {
   commitFile,
   fetchFile,
@@ -28,6 +29,14 @@ import {
   type EditableField,
 } from "@/lib/divi";
 import { rebuildCategory } from "@/lib/rebuild";
+import {
+  EMPTY_HEAD_SETTINGS,
+  HEAD_SETTINGS_PATH,
+  effectiveHeadValues,
+  parseHeadSettings,
+  type HeadSettings,
+  type HeadValues,
+} from "@/lib/headSettings";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -83,6 +92,9 @@ function Redaktion() {
   const [activeHtmlPath, setActiveHtmlPath] = useState<string | null>(null);
   const [htmlContent, setHtmlContent] = useState("");
   const [loadingHtml, setLoadingHtml] = useState(false);
+  const [headSettings, setHeadSettings] = useState<HeadSettings>(EMPTY_HEAD_SETTINGS);
+  const [editingHead, setEditingHead] = useState(false);
+  const [savingHead, setSavingHead] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(SETTINGS_KEY);
@@ -150,6 +162,16 @@ function Redaktion() {
       setActiveFooterPath((current) =>
         current && footerPaths.includes(current) ? current : (footerPaths[0] ?? null),
       );
+      if (tree.some((entry) => entry.type === "blob" && entry.path === HEAD_SETTINGS_PATH)) {
+        try {
+          const { text } = await fetchFile(config, HEAD_SETTINGS_PATH);
+          setHeadSettings(parseHeadSettings(text));
+        } catch {
+          setHeadSettings(EMPTY_HEAD_SETTINGS);
+        }
+      } else {
+        setHeadSettings(EMPTY_HEAD_SETTINGS);
+      }
       return result;
     } finally {
       setScanning(false);
@@ -200,10 +222,12 @@ function Redaktion() {
   const selectedFooterMarkups = activeFooterPath && globalMarkups[activeFooterPath]
     ? [globalMarkups[activeFooterPath]]
     : [];
+  const activeHeadValues = effectiveHeadValues(headSettings, activeHtmlPath);
 
   const openHtml = async (path: string) => {
     if (!cfg) return;
     setActivePath(null);
+    setEditingHead(false);
     setChapterFile(null);
     setActiveHtmlPath(path);
     setHtmlContent("");
@@ -222,6 +246,7 @@ function Redaktion() {
   const openChapter = async (path: string) => {
     if (!cfg) return;
     setActiveHtmlPath(null);
+    setEditingHead(false);
     setHtmlContent("");
     setActivePath(path);
     setLoadingChapter(true);
@@ -242,6 +267,36 @@ function Redaktion() {
       setFields([]);
     } finally {
       setLoadingChapter(false);
+    }
+  };
+
+  const handleSaveHead = async (
+    scope: "global" | "page",
+    path: string | null,
+    nextValues: HeadValues,
+  ) => {
+    if (!cfg) return;
+    setSavingHead(true);
+    try {
+      const nextSettings: HeadSettings =
+        scope === "global"
+          ? { ...headSettings, global: nextValues }
+          : {
+              ...headSettings,
+              pages: { ...headSettings.pages, ...(path ? { [path]: nextValues } : {}) },
+            };
+      await commitFile(
+        cfg,
+        HEAD_SETTINGS_PATH,
+        JSON.stringify(nextSettings, null, 2),
+        scope === "global" ? "Globalen HTML-Kopf aktualisiert" : `HTML-Kopf aktualisiert: ${path}`,
+      );
+      setHeadSettings(nextSettings);
+      toast.success(scope === "global" ? "HTML-Kopf für alle Seiten gespeichert." : "HTML-Kopf für diese Seite gespeichert.");
+    } catch (err) {
+      toast.error(describe(err));
+    } finally {
+      setSavingHead(false);
     }
   };
 
@@ -385,6 +440,18 @@ function Redaktion() {
                 </pre>
               </div>
             </details>
+
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant={editingHead ? "secondary" : "outline"}
+                className="w-full justify-start"
+                onClick={() => setEditingHead(true)}
+              >
+                <Code2 className="size-4" />
+                HTML-Kopf · Google & Pinterest
+              </Button>
+            </div>
 
             {([
               {
@@ -556,13 +623,22 @@ function Redaktion() {
       </aside>
 
       <main className="flex-1 overflow-y-auto">
-        {loadingHtml ? (
+        {editingHead ? (
+          <HeadSettingsEditor
+            settings={headSettings}
+            htmlFiles={htmlFiles}
+            initialPath={activeHtmlPath}
+            saving={savingHead}
+            onSave={handleSaveHead}
+          />
+        ) : loadingHtml ? (
           <p className="px-8 py-10 text-sm text-muted-foreground">HTML-Datei wird geladen…</p>
         ) : activeHtmlPath ? (
           <HtmlViewer
             path={activeHtmlPath}
             html={htmlContent}
             footerMarkups={selectedFooterMarkups}
+            headValues={activeHeadValues}
           />
         ) : loadingChapter ? (
           <p className="px-8 py-10 text-sm text-muted-foreground">Kapitel wird geladen…</p>
@@ -572,6 +648,7 @@ function Redaktion() {
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
             headerMarkups={selectedHeaderMarkups}
             footerMarkups={selectedFooterMarkups}
+            headValues={headSettings.global}
             fields={fields}
             values={values}
             dirty={dirty}

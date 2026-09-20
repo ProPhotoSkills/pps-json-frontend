@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import type { EditableField } from "@/lib/divi";
 import { parseChapterName } from "@/lib/divi";
 import { renderFullPageHtml } from "@/lib/preview";
+import type { HeadValues } from "@/lib/headSettings";
 
 type Props = {
   path: string;
   markup: string;
   headerMarkups: string[];
   footerMarkups: string[];
+  headValues: HeadValues;
   fields: EditableField[];
   values: Record<string, string>;
   dirty: boolean;
@@ -34,6 +36,7 @@ export function ChapterEditor({
   markup,
   headerMarkups,
   footerMarkups,
+  headValues,
   fields,
   values,
   dirty,
@@ -47,8 +50,8 @@ export function ChapterEditor({
 
   const previewHtml = useMemo(() => {
     if (!markup) return "";
-    return renderFullPageHtml(markup, values, headerMarkups, footerMarkups);
-  }, [markup, values, headerMarkups, footerMarkups]);
+    return renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues);
+  }, [markup, values, headerMarkups, footerMarkups, headValues]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
