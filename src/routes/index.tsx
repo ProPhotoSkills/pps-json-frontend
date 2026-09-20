@@ -64,6 +64,7 @@ function Redaktion() {
   const [connecting, setConnecting] = useState(false);
   const [scan, setScan] = useState<Scan | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [treePaths, setTreePaths] = useState<string[]>([]);
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePath, setActivePath] = useState<string | null>(null);
@@ -95,6 +96,11 @@ function Redaktion() {
     setScanning(true);
     try {
       const tree = await fetchTree(config);
+      const paths = tree.map((entry) => `${entry.type === "tree" ? "📁" : "📄"} ${entry.path}`);
+      setTreePaths(paths);
+      console.info(
+        `[pps-json] Repo-Scan: ${tree.length} Einträge\n${paths.join("\n")}`,
+      );
       const result = deriveScan(tree);
       setScan(result);
       setActiveCategory((current) => current ?? result.categories[0]?.name ?? null);
