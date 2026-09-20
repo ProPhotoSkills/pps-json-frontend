@@ -243,6 +243,36 @@ function Redaktion() {
         .map((line) => line.slice(2).trim()),
     [treePaths],
   );
+  // HTML-Dateien zur Darstellung in der Kapitel-Reihenfolge gruppieren
+  // (nur Anzeige-Reihenfolge, Dateien selbst bleiben unverändert).
+  const htmlGroups = useMemo(() => {
+    const groups: { name: string; files: string[] }[] = [];
+    const assigned = new Set<string>();
+    for (const cat of categories) {
+      const inCategory = htmlFiles.filter(
+        (file) => file.split("/")[0]?.toLowerCase() === cat.name.toLowerCase(),
+      );
+      const ordered: string[] = [];
+      for (const chapter of cat.chapters) {
+        const base = chapter.fileName.replace(/\.json$/i, "").toLowerCase();
+        for (const file of inCategory) {
+          if (ordered.includes(file)) continue;
+          const segment = file.split("/")[1]?.toLowerCase() ?? "";
+          if (segment === base || segment.startsWith(base)) ordered.push(file);
+        }
+      }
+      for (const file of inCategory) {
+        if (!ordered.includes(file)) ordered.push(file);
+      }
+      if (ordered.length) {
+        ordered.forEach((file) => assigned.add(file));
+        groups.push({ name: cat.name, files: ordered });
+      }
+    }
+    const rest = htmlFiles.filter((file) => !assigned.has(file));
+    if (rest.length) groups.push({ name: "Sonstige", files: rest });
+    return groups;
+  }, [htmlFiles, categories]);
   const selectedHeaderMarkups = activeHeaderPath && globalMarkups[activeHeaderPath]
     ? [globalMarkups[activeHeaderPath]]
     : [];
