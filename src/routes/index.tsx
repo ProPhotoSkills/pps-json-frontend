@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectCard } from "@/components/redaktion/ConnectCard";
 import { ChapterEditor } from "@/components/redaktion/ChapterEditor";
+import { HtmlViewer } from "@/components/redaktion/HtmlViewer";
 import {
   commitFile,
   fetchFile,
@@ -79,6 +80,9 @@ function Redaktion() {
   const [globalMarkups, setGlobalMarkups] = useState<Record<string, string>>({});
   const [activeHeaderPath, setActiveHeaderPath] = useState<string | null>(null);
   const [activeFooterPath, setActiveFooterPath] = useState<string | null>(null);
+  const [activeHtmlPath, setActiveHtmlPath] = useState<string | null>(null);
+  const [htmlContent, setHtmlContent] = useState("");
+  const [loadingHtml, setLoadingHtml] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(SETTINGS_KEY);
@@ -197,8 +201,28 @@ function Redaktion() {
     ? [globalMarkups[activeFooterPath]]
     : [];
 
+  const openHtml = async (path: string) => {
+    if (!cfg) return;
+    setActivePath(null);
+    setChapterFile(null);
+    setActiveHtmlPath(path);
+    setHtmlContent("");
+    setLoadingHtml(true);
+    try {
+      const { text } = await fetchFile(cfg, path);
+      setHtmlContent(text);
+    } catch (err) {
+      toast.error(describe(err));
+      setActiveHtmlPath(null);
+    } finally {
+      setLoadingHtml(false);
+    }
+  };
+
   const openChapter = async (path: string) => {
     if (!cfg) return;
+    setActiveHtmlPath(null);
+    setHtmlContent("");
     setActivePath(path);
     setLoadingChapter(true);
     try {
@@ -430,13 +454,18 @@ function Redaktion() {
               </div>
               <div className="mt-2 space-y-1">
                 {htmlFiles.map((file) => (
-                  <p
+                  <button
                     key={file}
-                    className="truncate rounded-md px-3 py-1.5 font-mono text-[11px] text-muted-foreground"
+                    onClick={() => openHtml(file)}
+                    className={`block w-full truncate rounded-md px-3 py-1.5 text-left font-mono text-[11px] transition-colors ${
+                      file === activeHtmlPath
+                        ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent/60"
+                    }`}
                     title={file}
                   >
                     {file}
-                  </p>
+                  </button>
                 ))}
                 {!htmlFiles.length && !scanning && (
                   <p className="px-3 py-2 text-xs text-muted-foreground">
@@ -527,7 +556,11 @@ function Redaktion() {
       </aside>
 
       <main className="flex-1 overflow-y-auto">
-        {loadingChapter ? (
+        {loadingHtml ? (
+          <p className="px-8 py-10 text-sm text-muted-foreground">HTML-Datei wird geladen…</p>
+        ) : activeHtmlPath ? (
+          <HtmlViewer path={activeHtmlPath} html={htmlContent} />
+        ) : loadingChapter ? (
           <p className="px-8 py-10 text-sm text-muted-foreground">Kapitel wird geladen…</p>
         ) : activePath && chapterFile ? (
           <ChapterEditor
