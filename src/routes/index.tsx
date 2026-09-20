@@ -344,6 +344,17 @@ function Redaktion() {
 
         <ScrollArea className="flex-1">
           <div className="px-3 py-4">
+            <details className="rounded-md border border-sidebar-border">
+              <summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground select-none">
+                Repo-Scan: {treePaths.length} Einträge – alle Ordner & Dateien anzeigen
+              </summary>
+              <div className="max-h-64 overflow-y-auto border-t border-sidebar-border px-3 py-2">
+                <pre className="font-mono text-[10px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                  {treePaths.join("\n")}
+                </pre>
+              </div>
+            </details>
+
             {([
               {
                 label: "Header",
