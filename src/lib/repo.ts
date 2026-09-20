@@ -54,5 +54,9 @@ export function deriveScan(tree: TreeEntry[]): Scan {
   }
 
   categories.sort((a, b) => a.name.localeCompare(b.name));
+  globals.sort((a, b) => {
+    const groupOrder = a.group.toLowerCase().localeCompare(b.group.toLowerCase());
+    return groupOrder || a.fileName.localeCompare(b.fileName);
+  });
   return { categories, globals };
 }
