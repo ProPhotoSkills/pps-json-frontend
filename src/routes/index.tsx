@@ -183,6 +183,13 @@ function Redaktion() {
     () => scan?.globals.filter((item) => item.group.toLowerCase() === "footer") ?? [],
     [scan],
   );
+  const htmlFiles = useMemo(
+    () =>
+      treePaths
+        .filter((line) => line.startsWith("📄") && line.toLowerCase().endsWith(".html"))
+        .map((line) => line.slice(2).trim()),
+    [treePaths],
+  );
   const selectedHeaderMarkups = activeHeaderPath && globalMarkups[activeHeaderPath]
     ? [globalMarkups[activeHeaderPath]]
     : [];
@@ -415,6 +422,29 @@ function Redaktion() {
                 </div>
               </div>
             ))}
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between px-2">
+                <p className="label-eyebrow">HTML-Dateien</p>
+                <span className="text-xs text-muted-foreground">{htmlFiles.length}</span>
+              </div>
+              <div className="mt-2 space-y-1">
+                {htmlFiles.map((file) => (
+                  <p
+                    key={file}
+                    className="truncate rounded-md px-3 py-1.5 font-mono text-[11px] text-muted-foreground"
+                    title={file}
+                  >
+                    {file}
+                  </p>
+                ))}
+                {!htmlFiles.length && !scanning && (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">
+                    Keine HTML-Dateien gefunden.
+                  </p>
+                )}
+              </div>
+            </div>
 
             <p className="label-eyebrow mt-6 px-2">Kategorien</p>
             <div className="mt-2 space-y-1">
