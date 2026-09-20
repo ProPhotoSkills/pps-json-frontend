@@ -369,7 +369,7 @@ function Redaktion() {
                 onSelect: setActiveFooterPath,
               },
             ] as const).map((group) => (
-              <div key={group.label}>
+              <div key={group.label} className="mt-4">
                 <div className="flex items-center justify-between px-2">
                   <p className="label-eyebrow">{group.label}</p>
                   <span className="text-xs text-muted-foreground">{group.variants.length}</span>
