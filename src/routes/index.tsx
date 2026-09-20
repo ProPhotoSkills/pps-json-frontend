@@ -338,7 +338,68 @@ function Redaktion() {
 
         <ScrollArea className="flex-1">
           <div className="px-3 py-4">
-            <p className="label-eyebrow px-2">Kategorien</p>
+            {([
+              {
+                label: "Header",
+                variants: headerVariants,
+                selectedPath: activeHeaderPath,
+                onSelect: setActiveHeaderPath,
+              },
+              {
+                label: "Footer",
+                variants: footerVariants,
+                selectedPath: activeFooterPath,
+                onSelect: setActiveFooterPath,
+              },
+            ] as const).map((group) => (
+              <div key={group.label}>
+                <div className="flex items-center justify-between px-2">
+                  <p className="label-eyebrow">{group.label}</p>
+                  <span className="text-xs text-muted-foreground">{group.variants.length}</span>
+                </div>
+                <div className="mt-2 space-y-1">
+                  {group.variants.map((variant) => {
+                    const selected = variant.path === group.selectedPath;
+                    return (
+                      <div
+                        key={variant.path}
+                        className={`flex min-h-10 items-center gap-1 rounded-md pr-1 transition-colors ${
+                          selected ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/60"
+                        }`}
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-auto min-w-0 flex-1 justify-start gap-2 px-3 py-2 font-mono text-[11px] hover:bg-transparent"
+                          onClick={() => group.onSelect(variant.path)}
+                          title={`${group.label}-Variante auswählen`}
+                        >
+                          <span className="grid size-4 shrink-0 place-items-center">
+                            {selected ? <Check className="size-3.5 text-primary" /> : null}
+                          </span>
+                          <span className="truncate">{variant.fileName.replace(/\.json$/i, "")}</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 shrink-0"
+                          onClick={() => openChapter(variant.path)}
+                          title={`${variant.fileName} bearbeiten`}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  {!group.variants.length && !scanning ? (
+                    <p className="px-3 py-2 text-xs text-muted-foreground">Keine Varianten gefunden.</p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+
+            <p className="label-eyebrow mt-6 px-2">Kategorien</p>
             <div className="mt-2 space-y-1">
               {categories.map((cat) => (
                 <button
@@ -413,67 +474,6 @@ function Redaktion() {
                 </p>
               </>
             )}
-
-            {([
-              {
-                label: "Header",
-                variants: headerVariants,
-                selectedPath: activeHeaderPath,
-                onSelect: setActiveHeaderPath,
-              },
-              {
-                label: "Footer",
-                variants: footerVariants,
-                selectedPath: activeFooterPath,
-                onSelect: setActiveFooterPath,
-              },
-            ] as const).map((group) => (
-              <div key={group.label} className="mt-6">
-                <div className="flex items-center justify-between px-2">
-                  <p className="label-eyebrow">{group.label}</p>
-                  <span className="text-xs text-muted-foreground">{group.variants.length}</span>
-                </div>
-                <div className="mt-2 space-y-1">
-                  {group.variants.map((variant) => {
-                    const selected = variant.path === group.selectedPath;
-                    return (
-                      <div
-                        key={variant.path}
-                        className={`flex min-h-10 items-center gap-1 rounded-md pr-1 transition-colors ${
-                          selected ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/60"
-                        }`}
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="h-auto min-w-0 flex-1 justify-start gap-2 px-3 py-2 font-mono text-[11px] hover:bg-transparent"
-                          onClick={() => group.onSelect(variant.path)}
-                          title={`${group.label}-Variante auswählen`}
-                        >
-                          <span className="grid size-4 shrink-0 place-items-center">
-                            {selected ? <Check className="size-3.5 text-primary" /> : null}
-                          </span>
-                          <span className="truncate">{variant.fileName.replace(/\.json$/i, "")}</span>
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="size-8 shrink-0"
-                          onClick={() => openChapter(variant.path)}
-                          title={`${variant.fileName} bearbeiten`}
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                  {!group.variants.length && !scanning ? (
-                    <p className="px-3 py-2 text-xs text-muted-foreground">Keine Varianten gefunden.</p>
-                  ) : null}
-                </div>
-              </div>
-            ))}
 
           </div>
         </ScrollArea>
