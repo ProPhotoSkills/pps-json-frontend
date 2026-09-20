@@ -64,6 +64,7 @@ function Redaktion() {
   const [connecting, setConnecting] = useState(false);
   const [scan, setScan] = useState<Scan | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [treePaths, setTreePaths] = useState<string[]>([]);
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePath, setActivePath] = useState<string | null>(null);
@@ -95,6 +96,11 @@ function Redaktion() {
     setScanning(true);
     try {
       const tree = await fetchTree(config);
+      const paths = tree.map((entry) => `${entry.type === "tree" ? "📁" : "📄"} ${entry.path}`);
+      setTreePaths(paths);
+      console.info(
+        `[pps-json] Repo-Scan: ${tree.length} Einträge\n${paths.join("\n")}`,
+      );
       const result = deriveScan(tree);
       setScan(result);
       setActiveCategory((current) => current ?? result.categories[0]?.name ?? null);
@@ -338,6 +344,17 @@ function Redaktion() {
 
         <ScrollArea className="flex-1">
           <div className="px-3 py-4">
+            <details className="rounded-md border border-sidebar-border">
+              <summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground select-none">
+                Repo-Scan: {treePaths.length} Einträge – alle Ordner & Dateien anzeigen
+              </summary>
+              <div className="max-h-64 overflow-y-auto border-t border-sidebar-border px-3 py-2">
+                <pre className="font-mono text-[10px] leading-relaxed whitespace-pre-wrap text-muted-foreground">
+                  {treePaths.join("\n")}
+                </pre>
+              </div>
+            </details>
+
             {([
               {
                 label: "Header",
@@ -352,7 +369,7 @@ function Redaktion() {
                 onSelect: setActiveFooterPath,
               },
             ] as const).map((group) => (
-              <div key={group.label}>
+              <div key={group.label} className="mt-4">
                 <div className="flex items-center justify-between px-2">
                   <p className="label-eyebrow">{group.label}</p>
                   <span className="text-xs text-muted-foreground">{group.variants.length}</span>
