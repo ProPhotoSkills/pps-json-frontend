@@ -4,6 +4,12 @@ import { toast } from "sonner";
 import { Check, Code2, FolderTree, Hammer, LogOut, Pencil, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectCard } from "@/components/redaktion/ConnectCard";
@@ -576,27 +582,44 @@ function Redaktion() {
                 <p className="label-eyebrow">HTML-Dateien</p>
                 <span className="text-xs text-muted-foreground">{htmlFiles.length}</span>
               </div>
-              <div className="mt-2 space-y-1">
-                {htmlFiles.map((file) => (
-                  <button
-                    key={file}
-                    onClick={() => openHtml(file)}
-                    className={`block w-full truncate rounded-md px-3 py-1.5 text-left font-mono text-[11px] transition-colors ${
-                      file === activeHtmlPath
-                        ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                        : "text-muted-foreground hover:bg-sidebar-accent/60"
-                    }`}
-                    title={file}
-                  >
-                    {file}
-                  </button>
+              <Accordion type="multiple" className="mt-2">
+                {htmlGroups.map((group) => (
+                  <AccordionItem key={group.name} value={group.name} className="border-b-0">
+                    <AccordionTrigger className="rounded-md px-3 py-2 text-sm hover:no-underline">
+                      <span className="flex items-center gap-2">
+                        <FolderTree className="size-3.5 text-muted-foreground" />
+                        {group.name}
+                      </span>
+                      <span className="mr-2 text-xs text-muted-foreground">
+                        {group.files.length}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-1">
+                      <div className="space-y-1 pl-2">
+                        {group.files.map((file) => (
+                          <button
+                            key={file}
+                            onClick={() => openHtml(file)}
+                            className={`block w-full truncate rounded-md px-3 py-1.5 text-left font-mono text-[11px] transition-colors ${
+                              file === activeHtmlPath
+                                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                                : "text-muted-foreground hover:bg-sidebar-accent/60"
+                            }`}
+                            title={file}
+                          >
+                            {file.split("/").pop()}
+                          </button>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-                {!htmlFiles.length && !scanning && (
-                  <p className="px-3 py-2 text-xs text-muted-foreground">
-                    Keine HTML-Dateien gefunden.
-                  </p>
-                )}
-              </div>
+              </Accordion>
+              {!htmlFiles.length && !scanning && (
+                <p className="px-3 py-2 text-xs text-muted-foreground">
+                  Keine HTML-Dateien gefunden.
+                </p>
+              )}
             </div>
 
             <p className="label-eyebrow mt-6 px-2">Kategorien</p>
