@@ -1,2 +1,3 @@
 - [x] Status zur fertigen Asset-Einbindung beantworten.
 - [x] Prüfen, ob die Vorschau und generierten HTML-Dateien die hochgeladenen Assets nutzen.
+- [x] Header- und Footer-Ordner separat anzeigen und Varianten für die Vorschau auswählbar machen.

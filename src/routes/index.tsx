@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { RefreshCw, FolderTree, LogOut, Hammer } from "lucide-react";
+import { Check, FolderTree, Hammer, LogOut, Pencil, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -75,8 +75,9 @@ function Redaktion() {
   const [saving, setSaving] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [chapterImages, setChapterImages] = useState<Record<string, string>>({});
-  const [headerMarkups, setHeaderMarkups] = useState<string[]>([]);
-  const [footerMarkups, setFooterMarkups] = useState<string[]>([]);
+  const [globalMarkups, setGlobalMarkups] = useState<Record<string, string>>({});
+  const [activeHeaderPath, setActiveHeaderPath] = useState<string | null>(null);
+  const [activeFooterPath, setActiveFooterPath] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(SETTINGS_KEY);
@@ -119,14 +120,26 @@ function Redaktion() {
           try {
             const { text } = await fetchFile(config, item.path);
             const parsed = JSON.parse(text) as ChapterFile;
-            return { group: item.group.toLowerCase(), markup: getChapterMarkup(parsed)?.markup ?? "" };
+            return { path: item.path, markup: getChapterMarkup(parsed)?.markup ?? "" };
           } catch {
-            return { group: item.group.toLowerCase(), markup: "" };
+            return { path: item.path, markup: "" };
           }
         }),
       );
-      setHeaderMarkups(globalEntries.filter((item) => item.group === "header" && item.markup).map((item) => item.markup));
-      setFooterMarkups(globalEntries.filter((item) => item.group === "footer" && item.markup).map((item) => item.markup));
+      setGlobalMarkups(Object.fromEntries(globalEntries.map((item) => [item.path, item.markup])));
+
+      const headerPaths = result.globals
+        .filter((item) => item.group.toLowerCase() === "header")
+        .map((item) => item.path);
+      const footerPaths = result.globals
+        .filter((item) => item.group.toLowerCase() === "footer")
+        .map((item) => item.path);
+      setActiveHeaderPath((current) =>
+        current && headerPaths.includes(current) ? current : (headerPaths[0] ?? null),
+      );
+      setActiveFooterPath((current) =>
+        current && footerPaths.includes(current) ? current : (footerPaths[0] ?? null),
+      );
       return result;
     } finally {
       setScanning(false);
@@ -156,6 +169,20 @@ function Redaktion() {
     () => categories.find((c) => c.name === activeCategory) ?? null,
     [categories, activeCategory],
   );
+  const headerVariants = useMemo(
+    () => scan?.globals.filter((item) => item.group.toLowerCase() === "header") ?? [],
+    [scan],
+  );
+  const footerVariants = useMemo(
+    () => scan?.globals.filter((item) => item.group.toLowerCase() === "footer") ?? [],
+    [scan],
+  );
+  const selectedHeaderMarkups = activeHeaderPath && globalMarkups[activeHeaderPath]
+    ? [globalMarkups[activeHeaderPath]]
+    : [];
+  const selectedFooterMarkups = activeFooterPath && globalMarkups[activeFooterPath]
+    ? [globalMarkups[activeFooterPath]]
+    : [];
 
   const openChapter = async (path: string) => {
     if (!cfg) return;
@@ -387,27 +414,66 @@ function Redaktion() {
               </>
             )}
 
-            {scan?.globals.length ? (
-              <>
-                <p className="label-eyebrow mt-6 px-2">Globale Exporte</p>
-                <div className="mt-2 space-y-1">
-                  {scan.globals.map((g) => (
-                    <button
-                      key={g.path}
-                      onClick={() => openChapter(g.path)}
-                      className={`flex w-full items-start gap-2 rounded-md px-3 py-2 text-left font-mono text-[11px] transition-colors ${
-                        g.path === activePath
-                          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                          : "hover:bg-sidebar-accent/60"
-                      }`}
-                    >
-                      <span className="mt-0.5 size-2 shrink-0 rounded-full bg-primary" />
-                      <span className="leading-snug break-all">{g.path}</span>
-                    </button>
-                  ))}
+            {([
+              {
+                label: "Header",
+                variants: headerVariants,
+                selectedPath: activeHeaderPath,
+                onSelect: setActiveHeaderPath,
+              },
+              {
+                label: "Footer",
+                variants: footerVariants,
+                selectedPath: activeFooterPath,
+                onSelect: setActiveFooterPath,
+              },
+            ] as const).map((group) => (
+              <div key={group.label} className="mt-6">
+                <div className="flex items-center justify-between px-2">
+                  <p className="label-eyebrow">{group.label}</p>
+                  <span className="text-xs text-muted-foreground">{group.variants.length}</span>
                 </div>
-              </>
-            ) : null}
+                <div className="mt-2 space-y-1">
+                  {group.variants.map((variant) => {
+                    const selected = variant.path === group.selectedPath;
+                    return (
+                      <div
+                        key={variant.path}
+                        className={`flex min-h-10 items-center gap-1 rounded-md pr-1 transition-colors ${
+                          selected ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/60"
+                        }`}
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-auto min-w-0 flex-1 justify-start gap-2 px-3 py-2 font-mono text-[11px] hover:bg-transparent"
+                          onClick={() => group.onSelect(variant.path)}
+                          title={`${group.label}-Variante auswählen`}
+                        >
+                          <span className="grid size-4 shrink-0 place-items-center">
+                            {selected ? <Check className="size-3.5 text-primary" /> : null}
+                          </span>
+                          <span className="truncate">{variant.fileName.replace(/\.json$/i, "")}</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 shrink-0"
+                          onClick={() => openChapter(variant.path)}
+                          title={`${variant.fileName} bearbeiten`}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  {!group.variants.length && !scanning ? (
+                    <p className="px-3 py-2 text-xs text-muted-foreground">Keine Varianten gefunden.</p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
 
           </div>
         </ScrollArea>
@@ -420,8 +486,8 @@ function Redaktion() {
           <ChapterEditor
             path={activePath}
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
-            headerMarkups={headerMarkups}
-            footerMarkups={footerMarkups}
+            headerMarkups={selectedHeaderMarkups}
+            footerMarkups={selectedFooterMarkups}
             fields={fields}
             values={values}
             dirty={dirty}
