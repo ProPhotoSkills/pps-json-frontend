@@ -3,3 +3,4 @@
 - [x] Header- und Footer-Ordner separat anzeigen und Varianten für die Vorschau auswählbar machen.
 - [x] HTML-Dateien in der Vorschau mit PPS-CSS und ausgewähltem Footer darstellen.
 - [x] Google-Analytics- und weitere Header-Codes global sowie pro HTML-Seite einstellbar machen.
+- [x] Bestehende Kopfzeilen-Angaben aus allen HTML-Dateien einlesen und zur Korrektur anzeigen.
