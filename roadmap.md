@@ -2,4 +2,4 @@
 - [x] Prüfen, ob die Vorschau und generierten HTML-Dateien die hochgeladenen Assets nutzen.
 - [x] Header- und Footer-Ordner separat anzeigen und Varianten für die Vorschau auswählbar machen.
 - [x] HTML-Dateien in der Vorschau mit PPS-CSS und ausgewähltem Footer darstellen.
-- [ ] Google-Analytics- und weitere Header-Codes global sowie pro HTML-Seite einstellbar machen.
+- [x] Google-Analytics- und weitere Header-Codes global sowie pro HTML-Seite einstellbar machen.
