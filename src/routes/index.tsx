@@ -33,7 +33,10 @@ import {
   EMPTY_HEAD_SETTINGS,
   HEAD_SETTINGS_PATH,
   effectiveHeadValues,
+  extractHeadValuesFromHtml,
+  mergeExtractedHeadSettings,
   parseHeadSettings,
+  type HeadScanSummary,
   type HeadSettings,
   type HeadValues,
 } from "@/lib/headSettings";
@@ -95,6 +98,10 @@ function Redaktion() {
   const [headSettings, setHeadSettings] = useState<HeadSettings>(EMPTY_HEAD_SETTINGS);
   const [editingHead, setEditingHead] = useState(false);
   const [savingHead, setSavingHead] = useState(false);
+  const [headScanSummary, setHeadScanSummary] = useState<HeadScanSummary>({
+    scannedPages: 0,
+    pagesWithValues: 0,
+  });
 
   useEffect(() => {
     const stored = localStorage.getItem(SETTINGS_KEY);
@@ -162,16 +169,36 @@ function Redaktion() {
       setActiveFooterPath((current) =>
         current && footerPaths.includes(current) ? current : (footerPaths[0] ?? null),
       );
+      let storedHeadSettings = EMPTY_HEAD_SETTINGS;
       if (tree.some((entry) => entry.type === "blob" && entry.path === HEAD_SETTINGS_PATH)) {
         try {
           const { text } = await fetchFile(config, HEAD_SETTINGS_PATH);
-          setHeadSettings(parseHeadSettings(text));
+          storedHeadSettings = parseHeadSettings(text);
         } catch {
-          setHeadSettings(EMPTY_HEAD_SETTINGS);
+          storedHeadSettings = EMPTY_HEAD_SETTINGS;
         }
-      } else {
-        setHeadSettings(EMPTY_HEAD_SETTINGS);
       }
+      const repoHtmlFiles = tree
+        .filter((entry) => entry.type === "blob" && entry.path.toLowerCase().endsWith(".html"))
+        .map((entry) => entry.path);
+      const extractedEntries = await Promise.all(
+        repoHtmlFiles.map(async (path) => {
+          try {
+            const { text } = await fetchFile(config, path);
+            return [path, extractHeadValuesFromHtml(text)] as const;
+          } catch {
+            return [path, { googleAnalyticsId: "", pinterestVerification: "", additionalHeadHtml: "" }] as const;
+          }
+        }),
+      );
+      const extracted = Object.fromEntries(extractedEntries);
+      setHeadSettings(mergeExtractedHeadSettings(storedHeadSettings, extracted));
+      setHeadScanSummary({
+        scannedPages: repoHtmlFiles.length,
+        pagesWithValues: Object.values(extracted).filter((values) =>
+          Object.values(values).some((value) => value.trim()),
+        ).length,
+      });
       return result;
     } finally {
       setScanning(false);
@@ -629,6 +656,7 @@ function Redaktion() {
             htmlFiles={htmlFiles}
             initialPath={activeHtmlPath}
             saving={savingHead}
+            scanSummary={headScanSummary}
             onSave={handleSaveHead}
           />
         ) : loadingHtml ? (

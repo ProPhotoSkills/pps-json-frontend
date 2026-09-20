@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   EMPTY_HEAD_VALUES,
+  effectiveHeadValues,
+  type HeadScanSummary,
   type HeadSettings,
   type HeadValues,
 } from "@/lib/headSettings";
@@ -16,17 +18,18 @@ type Props = {
   htmlFiles: string[];
   initialPath: string | null;
   saving: boolean;
+  scanSummary: HeadScanSummary;
   onSave: (scope: "global" | "page", path: string | null, values: HeadValues) => void;
 };
 
-export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, onSave }: Props) {
+export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, scanSummary, onSave }: Props) {
   const [scope, setScope] = useState<"global" | "page">(initialPath ? "page" : "global");
   const [path, setPath] = useState(initialPath ?? htmlFiles[0] ?? "");
   const source = useMemo(
     () =>
       scope === "global"
         ? settings.global
-        : { ...EMPTY_HEAD_VALUES, ...(settings.pages[path] ?? {}) },
+        : path ? effectiveHeadValues(settings, path) : EMPTY_HEAD_VALUES,
     [path, scope, settings],
   );
   const [values, setValues] = useState<HeadValues>(source);
@@ -41,6 +44,9 @@ export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, o
 
   const update = (key: keyof HeadValues, value: string) =>
     setValues((current) => ({ ...current, [key]: value }));
+  const pageHasOwnValues = Boolean(
+    path && Object.values(settings.pages[path] ?? {}).some((value) => value?.trim()),
+  );
 
   return (
     <div className="mx-auto w-full max-w-4xl px-5 py-8 lg:px-8 lg:py-10">
@@ -48,6 +54,9 @@ export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, o
       <h2 className="mt-1 text-3xl">HTML-Kopf</h2>
       <p className="mt-2 text-sm text-muted-foreground">
         Google, Pinterest und weitere Codes getrennt vom sichtbaren Seitenkopf verwalten.
+      </p>
+      <p className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+        {scanSummary.scannedPages} HTML-Seiten gelesen · auf {scanSummary.pagesWithValues} Seiten Angaben gefunden
       </p>
 
       <div className="mt-7 flex flex-wrap gap-2">
@@ -65,7 +74,11 @@ export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, o
           <select id="head-page" value={path} onChange={(event) => setPath(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
             {htmlFiles.map((file) => <option key={file} value={file}>{file}</option>)}
           </select>
-          <p className="text-xs text-muted-foreground">Leere Felder übernehmen automatisch die Einstellung für alle Seiten.</p>
+          <p className="text-xs text-muted-foreground">
+            {pageHasOwnValues
+              ? "Diese Seite enthält eigene Angaben. Du kannst sie hier korrigieren."
+              : "Diese Seite übernimmt momentan die Angaben für alle Seiten. Beim Speichern erhält sie eigene Werte."}
+          </p>
         </div>
       ) : null}
 
