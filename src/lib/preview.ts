@@ -95,6 +95,33 @@ function renderMarkup(markup: string, values: Record<string, string>): string {
     .join("\n");
 }
 
+/** Ergänzt eine bestehende HTML-Datei für die RDS-Vorschau um PPS-CSS und den gewählten Footer. */
+export function renderHtmlFilePreview(html: string, footerMarkups: string[] = []): string {
+  const assetHead = renderPpsAssetHeadTags();
+  const hasFooter = /<footer\b|class=["'][^"']*(?:pps-site-footer|et-l--footer)/i.test(html);
+  const renderedFooter = footerMarkups.map((part) => renderMarkup(part, {})).join("\n");
+  const footer = !hasFooter && renderedFooter
+    ? `<footer class="pps-site-footer">${renderedFooter}</footer>`
+    : "";
+
+  let preview = html;
+  if (/<\/head\s*>/i.test(preview)) {
+    preview = preview.replace(/<\/head\s*>/i, `${assetHead}\n</head>`);
+  } else {
+    preview = `${assetHead}\n${preview}`;
+  }
+
+  if (footer) {
+    if (/<\/body\s*>/i.test(preview)) {
+      preview = preview.replace(/<\/body\s*>/i, `${footer}\n</body>`);
+    } else {
+      preview += `\n${footer}`;
+    }
+  }
+
+  return preview;
+}
+
 export function renderPreviewHtml(
   markup: string,
   values: Record<string, string> = {},

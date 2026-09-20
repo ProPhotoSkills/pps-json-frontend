@@ -559,7 +559,11 @@ function Redaktion() {
         {loadingHtml ? (
           <p className="px-8 py-10 text-sm text-muted-foreground">HTML-Datei wird geladen…</p>
         ) : activeHtmlPath ? (
-          <HtmlViewer path={activeHtmlPath} html={htmlContent} />
+          <HtmlViewer
+            path={activeHtmlPath}
+            html={htmlContent}
+            footerMarkups={selectedFooterMarkups}
+          />
         ) : loadingChapter ? (
           <p className="px-8 py-10 text-sm text-muted-foreground">Kapitel wird geladen…</p>
         ) : activePath && chapterFile ? (
