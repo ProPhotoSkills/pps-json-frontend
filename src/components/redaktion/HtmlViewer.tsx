@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { renderHtmlFilePreview } from "@/lib/preview";
 
 type Props = {
   path: string;
   html: string;
+  footerMarkups: string[];
 };
 
-export function HtmlViewer({ path, html }: Props) {
+export function HtmlViewer({ path, html, footerMarkups }: Props) {
   const [tab, setTab] = useState<"preview" | "source">("preview");
   const fileName = path.split("/").pop() ?? path;
+  const previewHtml = useMemo(
+    () => renderHtmlFilePreview(html, footerMarkups),
+    [html, footerMarkups],
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
@@ -18,29 +26,33 @@ export function HtmlViewer({ path, html }: Props) {
       </div>
 
       <div className="mt-6 inline-flex rounded-lg border border-border bg-muted/40 p-1">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setTab("preview")}
-          className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
+          className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "preview" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
         >
           HTML-Vorschau
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setTab("source")}
-          className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
+          className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "source" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
         >
           Quelltext
-        </button>
+        </Button>
       </div>
 
       {tab === "preview" ? (
         <div className="mt-6 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
           <iframe
             title={`Vorschau ${fileName}`}
-            srcDoc={html}
+            srcDoc={previewHtml}
             sandbox=""
             className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />

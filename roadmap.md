@@ -1,3 +1,4 @@
 - [x] Status zur fertigen Asset-Einbindung beantworten.
 - [x] Prüfen, ob die Vorschau und generierten HTML-Dateien die hochgeladenen Assets nutzen.
 - [x] Header- und Footer-Ordner separat anzeigen und Varianten für die Vorschau auswählbar machen.
+- [x] HTML-Dateien in der Vorschau mit PPS-CSS und ausgewähltem Footer darstellen.
