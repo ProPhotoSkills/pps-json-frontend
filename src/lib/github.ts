@@ -65,9 +65,11 @@ export async function verifyToken(cfg: RepoConfig) {
 }
 
 export async function fetchTree(cfg: RepoConfig): Promise<TreeEntry[]> {
+  // Immer frisch laden – kein Browser-/CDN-Cache.
   const data = await request<{ tree: TreeEntry[]; truncated: boolean }>(
     cfg,
-    `/repos/${cfg.owner}/${cfg.repo}/git/trees/${encodeURIComponent(cfg.branch)}?recursive=1`,
+    `/repos/${cfg.owner}/${cfg.repo}/git/trees/${encodeURIComponent(cfg.branch)}?recursive=1&ts=${Date.now()}`,
+    { cache: "no-store" },
   );
   return data.tree ?? [];
 }

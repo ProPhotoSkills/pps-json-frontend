@@ -249,36 +249,24 @@ function Redaktion() {
         .map((line) => line.slice(2).trim()),
     [treePaths],
   );
-  // HTML-Dateien zur Darstellung in der Kapitel-Reihenfolge gruppieren
-  // (nur Anzeige-Reihenfolge, Dateien selbst bleiben unverändert).
+  // HTML-Dateien genau in dem Ordner anzeigen, in dem sie im Repo liegen.
+  // Reihenfolge bleibt wie im Repo-Scan – es wird nichts umsortiert.
   const htmlGroups = useMemo(() => {
     const groups: { name: string; files: string[] }[] = [];
-    const assigned = new Set<string>();
-    for (const cat of categories) {
-      const inCategory = htmlFiles.filter(
-        (file) => file.split("/")[0]?.toLowerCase() === cat.name.toLowerCase(),
-      );
-      const ordered: string[] = [];
-      for (const chapter of cat.chapters) {
-        const base = chapter.fileName.replace(/\.json$/i, "").toLowerCase();
-        for (const file of inCategory) {
-          if (ordered.includes(file)) continue;
-          const segment = file.split("/")[1]?.toLowerCase() ?? "";
-          if (segment === base || segment.startsWith(base)) ordered.push(file);
-        }
-      }
-      for (const file of inCategory) {
-        if (!ordered.includes(file)) ordered.push(file);
-      }
-      if (ordered.length) {
-        ordered.forEach((file) => assigned.add(file));
-        groups.push({ name: cat.name, files: ordered });
+    const index = new Map<string, number>();
+    for (const file of htmlFiles) {
+      const parts = file.split("/");
+      const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "/";
+      const existing = index.get(folder);
+      if (existing === undefined) {
+        index.set(folder, groups.length);
+        groups.push({ name: folder, files: [file] });
+      } else {
+        groups[existing]!.files.push(file);
       }
     }
-    const rest = htmlFiles.filter((file) => !assigned.has(file));
-    if (rest.length) groups.push({ name: "Sonstige", files: rest });
     return groups;
-  }, [htmlFiles, categories]);
+  }, [htmlFiles]);
   const selectedHeaderMarkups = activeHeaderPath && globalMarkups[activeHeaderPath]
     ? [globalMarkups[activeHeaderPath]]
     : [];
