@@ -4,6 +4,8 @@ export type HeadValues = {
   googleAnalyticsId: string;
   pinterestVerification: string;
   additionalHeadHtml: string;
+  /** Vollständiger, ausgelesener Kopfzeilen-Text (z. B. Google-Sprachen, Meta-Tags). */
+  headText: string;
 };
 
 export type HeadSettings = {
