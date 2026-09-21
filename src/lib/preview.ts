@@ -58,20 +58,24 @@ function renderBlock(block: Block, values: Record<string, string>): string {
   const parts: string[] = [];
 
   if (src && /^https?:/.test(src)) {
-    parts.push(`<figure><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy" />${
-      alt ? `<figcaption>${esc(alt)}</figcaption>` : ""
-    }</figure>`);
+    parts.push(`<figure><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy" /></figure>`);
   }
 
   for (const field of block.fields) {
     const key = field.key.toLowerCase();
-    if (key === "src" || key === "alt") continue;
+    if (key === "src" || key === "alt" || key === "titletext") continue;
     const raw = values[field.id] ?? field.value;
     const value = field.kind === "text" || field.kind === "heading" ? safeHtml(raw) : clean(raw);
     if (!value) continue;
 
-    if (field.kind === "heading") {
-      parts.push(`<h2>${isHtml(value) ? value : esc(value)}</h2>`);
+    if (field.kind === "media") {
+      parts.push(`<p><audio controls preload="none" src="${esc(value)}"></audio></p>`);
+    } else if (field.kind === "image") {
+      if (/^https?:/.test(value)) {
+        parts.push(`<figure><img src="${esc(value)}" alt="" loading="lazy" /></figure>`);
+      }
+    } else if (field.kind === "heading") {
+      parts.push(isHtml(value) ? `<div class="rich">${value}</div>` : `<h2>${esc(value)}</h2>`);
     } else if (field.kind === "link") {
       parts.push(`<p class="link"><a href="${esc(value)}">${esc(value)}</a></p>`);
     } else if (key === "label" || key === "buttontext") {

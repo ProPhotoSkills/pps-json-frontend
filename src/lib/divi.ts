@@ -13,7 +13,7 @@ export type ChapterFile = {
   data: Record<string, string>;
 };
 
-export type FieldKind = "heading" | "text" | "image" | "link";
+export type FieldKind = "heading" | "text" | "image" | "link" | "media";
 
 export type EditableField = {
   /** eindeutige ID: blockIndex + JSON-Pfad */
@@ -95,6 +95,40 @@ function shortBlockName(name: string): string {
     .join(" ");
 }
 
+/** Felder, die nur technische Metadaten enthalten. */
+const SKIP_KEYS = new Set(["id", "width", "height", "classname", "class", "sync", "adminlabel"]);
+
+const MEDIA_RE = /\.(mp3|wav|m4a|ogg|mp4|webm)(\?|$)/i;
+const IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i;
+
+/**
+ * Divi 5 legt redaktionelle Inhalte unter <gruppe>.innerContent.<breakpoint>.value ab –
+ * entweder als HTML-String (Text/Überschrift) oder als Objekt (Bild mit src/alt).
+ */
+function classifyInner(
+  groupName: string,
+  key: string,
+  value: string,
+): FieldKind | null {
+  const k = key.toLowerCase();
+  if (SKIP_KEYS.has(k)) return null;
+  const group = groupName.toLowerCase();
+
+  if (k === "src") return IMAGE_RE.test(value) || value.startsWith("http") ? "image" : null;
+  if (k === "alt" || k === "titletext") return "image";
+  if (k === "url" || k === "href") return "link";
+
+  if (k === "value" || k === "text" || k === "content") {
+    if (MEDIA_RE.test(value)) return "media";
+    if (IMAGE_RE.test(value) && /^https?:/.test(value)) return "image";
+    if (/^https?:\/\/\S+$/.test(value)) return "link";
+    if (/<h[1-3][\s>]/i.test(value)) return "heading";
+    if (group === "title" || group === "heading") return "heading";
+    return "text";
+  }
+  return null;
+}
+
 function classify(blockName: string, key: string, value: string): FieldKind | null {
   const k = key.toLowerCase();
   const isImageish = /\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i.test(value);
@@ -123,6 +157,8 @@ function labelFor(blockName: string, key: string, kind: FieldKind): string {
     url: "Link-Ziel",
     href: "Link-Ziel",
     label: "Button-Beschriftung",
+    value: "Inhalt",
+    titletext: "Bild-Titel",
   };
   const suffix = keyLabels[key.toLowerCase()] ?? key;
   const prefix =
@@ -146,8 +182,14 @@ function walk(
       if (typeof value === "string") {
         const trimmed = value.trim();
         if (!trimmed) continue;
-        const kind = classify(blockName.toLowerCase(), key, trimmed);
+        const innerIdx = path.indexOf("innerContent");
+        const kind =
+          innerIdx >= 0
+            ? classifyInner(String(path[innerIdx - 1] ?? blockName), key, trimmed)
+            : classify(blockName.toLowerCase(), key, trimmed);
         if (!kind) continue;
+        // Nur die Desktop-Variante ist redaktionell relevant.
+        if (innerIdx >= 0 && path[innerIdx + 1] && path[innerIdx + 1] !== "desktop") continue;
         out.push({
           id: `${blockIndex}:${[...path, key].join(".")}`,
           blockIndex,
