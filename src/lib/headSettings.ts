@@ -22,6 +22,7 @@ export const EMPTY_HEAD_VALUES: HeadValues = {
   googleAnalyticsId: "",
   pinterestVerification: "",
   additionalHeadHtml: "",
+  headText: "",
 };
 
 export const EMPTY_HEAD_SETTINGS: HeadSettings = {
