@@ -15,16 +15,16 @@ import {
 
 type Props = {
   settings: HeadSettings;
-  htmlFiles: string[];
+  files: string[];
   initialPath: string | null;
   saving: boolean;
   scanSummary: HeadScanSummary;
   onSave: (scope: "global" | "page", path: string | null, values: HeadValues) => void;
 };
 
-export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, scanSummary, onSave }: Props) {
+export function HeadSettingsEditor({ settings, files, initialPath, saving, scanSummary, onSave }: Props) {
   const [scope, setScope] = useState<"global" | "page">(initialPath ? "page" : "global");
-  const [path, setPath] = useState(initialPath ?? htmlFiles[0] ?? "");
+  const [path, setPath] = useState(initialPath ?? files[0] ?? "");
   const source = useMemo(
     () =>
       scope === "global"
