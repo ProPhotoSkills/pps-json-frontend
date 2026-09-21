@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Globe2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   EMPTY_HEAD_VALUES,
   effectiveHeadValues,
@@ -21,6 +20,63 @@ type Props = {
   scanSummary: HeadScanSummary;
   onSave: (scope: "global" | "page", path: string | null, values: HeadValues) => void;
 };
+
+function CodeLines({
+  id,
+  value,
+  onChange,
+  rows,
+  placeholder,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows: number;
+  placeholder: string;
+}) {
+  const gutterRef = useRef<HTMLDivElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const lineCount = useMemo(() => Math.max(value.split("\n").length, rows), [value, rows]);
+  const numbers = useMemo(
+    () => Array.from({ length: lineCount }, (_, index) => index + 1),
+    [lineCount],
+  );
+
+  const syncScroll = () => {
+    if (gutterRef.current && taRef.current) {
+      gutterRef.current.scrollTop = taRef.current.scrollTop;
+    }
+  };
+
+  return (
+    <div className="flex w-full overflow-hidden rounded-md border border-input bg-background font-mono text-xs leading-5">
+      <div
+        ref={gutterRef}
+        aria-hidden
+        className="w-14 shrink-0 select-none overflow-hidden border-r border-border bg-muted/40 px-2 py-2 text-right text-muted-foreground"
+      >
+        {numbers.map((number) => (
+          <div key={number} className="h-5">
+            {number}
+          </div>
+        ))}
+      </div>
+      <textarea
+        ref={taRef}
+        id={id}
+        rows={rows}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onScroll={syncScroll}
+        wrap="off"
+        spellCheck={false}
+        placeholder={placeholder}
+        className="h-full min-w-0 flex-1 resize-y overflow-auto bg-transparent px-3 py-2 outline-none"
+        style={{ whiteSpace: "pre" }}
+      />
+    </div>
+  );
+}
 
 export function HeadSettingsEditor({ settings, files, initialPath, saving, scanSummary, onSave }: Props) {
   const [scope, setScope] = useState<"global" | "page">(initialPath ? "page" : "global");
@@ -49,7 +105,7 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
   );
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-5 py-8 lg:px-8 lg:py-10">
+    <div className="w-full px-5 py-8 lg:px-8 lg:py-10">
       <p className="label-eyebrow">Einstellungen</p>
       <h2 className="mt-1 text-3xl">HTML-Kopf</h2>
       <p className="mt-2 text-sm text-muted-foreground">
@@ -86,16 +142,15 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
         <div className="space-y-2">
           <Label htmlFor="head-text">Kopfzeilen-Text (ausgelesen)</Label>
           <p className="text-xs text-muted-foreground">
-            Der komplette Kopfbereich, so wie er ausgelesen wurde – zum Beispiel Google-Sprachen,
-            Schriften und Meta-Angaben. Hier kannst du ihn direkt korrigieren.
+            Der komplette Kopfbereich als Code-Zeilen mit Zeilennummern – lange Zeilen laufen nach rechts weiter.
+            Hier kannst du ihn direkt korrigieren.
           </p>
-          <Textarea
+          <CodeLines
             id="head-text"
             rows={32}
             value={values.headText}
-            onChange={(event) => update("headText", event.target.value)}
+            onChange={(next) => update("headText", next)}
             placeholder="Noch kein Kopfzeilen-Text ausgelesen"
-            className="font-mono text-xs"
           />
         </div>
         <div className="space-y-2">
@@ -108,7 +163,13 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
         </div>
         <div className="space-y-2">
           <Label htmlFor="additional-head-html">Weitere Codes im HTML-Kopf</Label>
-          <Textarea id="additional-head-html" rows={24} value={values.additionalHeadHtml} onChange={(event) => update("additionalHeadHtml", event.target.value)} placeholder="Zum Beispiel Bing, Übersetzung, Cookie-Einbindung oder weitere Meta-Tags" className="font-mono text-xs" />
+          <CodeLines
+            id="additional-head-html"
+            rows={24}
+            value={values.additionalHeadHtml}
+            onChange={(next) => update("additionalHeadHtml", next)}
+            placeholder="Zum Beispiel Bing, Übersetzung, Cookie-Einbindung oder weitere Meta-Tags"
+          />
         </div>
       </div>
 
