@@ -37,6 +37,7 @@ import {
 import { rebuildCategory } from "@/lib/rebuild";
 import {
   EMPTY_HEAD_SETTINGS,
+  EMPTY_HEAD_VALUES,
   HEAD_SETTINGS_PATH,
   effectiveHeadValues,
   extractHeadValuesFromHtml,
