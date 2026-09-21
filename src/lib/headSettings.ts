@@ -113,6 +113,7 @@ export function mergeExtractedHeadSettings(
     googleAnalyticsId: mostCommon(discovered.map((item) => item.googleAnalyticsId)),
     pinterestVerification: mostCommon(discovered.map((item) => item.pinterestVerification)),
     additionalHeadHtml: mostCommon(discovered.map((item) => item.additionalHeadHtml)),
+    headText: mostCommon(discovered.map((item) => item.headText)),
   };
   const global: HeadValues = {
     googleAnalyticsId: stored.global.googleAnalyticsId.trim() || inferredGlobal.googleAnalyticsId,
