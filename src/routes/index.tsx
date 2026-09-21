@@ -193,7 +193,7 @@ function Redaktion() {
             const { text } = await fetchFile(config, path);
             return [path, extractHeadValuesFromHtml(text)] as const;
           } catch {
-            return [path, { googleAnalyticsId: "", pinterestVerification: "", additionalHeadHtml: "" }] as const;
+            return [path, EMPTY_HEAD_VALUES] as const;
           }
         }),
       );
