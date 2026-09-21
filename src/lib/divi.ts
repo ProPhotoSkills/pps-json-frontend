@@ -157,6 +157,8 @@ function labelFor(blockName: string, key: string, kind: FieldKind): string {
     url: "Link-Ziel",
     href: "Link-Ziel",
     label: "Button-Beschriftung",
+    value: "Inhalt",
+    titletext: "Bild-Titel",
   };
   const suffix = keyLabels[key.toLowerCase()] ?? key;
   const prefix =
