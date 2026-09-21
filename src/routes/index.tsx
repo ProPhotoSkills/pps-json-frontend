@@ -741,7 +741,7 @@ function Redaktion() {
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
             headerMarkups={selectedHeaderMarkups}
             footerMarkups={selectedFooterMarkups}
-            headValues={headSettings.global}
+            headValues={effectiveHeadValues(headSettings, activePath)}
             fields={fields}
             values={values}
             original={original}
