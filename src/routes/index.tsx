@@ -300,6 +300,7 @@ function Redaktion() {
   const selectedFooterMarkups = activeFooterPath && globalMarkups[activeFooterPath]
     ? [globalMarkups[activeFooterPath]]
     : [];
+  const headTargetFiles = useMemo(() => [...htmlFiles, ...jsonFiles], [htmlFiles, jsonFiles]);
   const activeHeadValues = effectiveHeadValues(headSettings, activeHtmlPath);
   const activeDocumentKind = activePath?.split("/")[0]?.toLowerCase() === "header"
     ? "header"
