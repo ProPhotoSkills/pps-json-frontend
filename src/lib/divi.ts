@@ -13,7 +13,7 @@ export type ChapterFile = {
   data: Record<string, string>;
 };
 
-export type FieldKind = "heading" | "text" | "image" | "link";
+export type FieldKind = "heading" | "text" | "image" | "link" | "media";
 
 export type EditableField = {
   /** eindeutige ID: blockIndex + JSON-Pfad */
@@ -93,6 +93,40 @@ function shortBlockName(name: string): string {
     .split(/[-_]/)
     .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
     .join(" ");
+}
+
+/** Felder, die nur technische Metadaten enthalten. */
+const SKIP_KEYS = new Set(["id", "width", "height", "classname", "class", "sync", "adminlabel"]);
+
+const MEDIA_RE = /\.(mp3|wav|m4a|ogg|mp4|webm)(\?|$)/i;
+const IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|svg)(\?|$)/i;
+
+/**
+ * Divi 5 legt redaktionelle Inhalte unter <gruppe>.innerContent.<breakpoint>.value ab –
+ * entweder als HTML-String (Text/Überschrift) oder als Objekt (Bild mit src/alt).
+ */
+function classifyInner(
+  groupName: string,
+  key: string,
+  value: string,
+): FieldKind | null {
+  const k = key.toLowerCase();
+  if (SKIP_KEYS.has(k)) return null;
+  const group = groupName.toLowerCase();
+
+  if (k === "src") return IMAGE_RE.test(value) || value.startsWith("http") ? "image" : null;
+  if (k === "alt" || k === "titletext") return "image";
+  if (k === "url" || k === "href") return "link";
+
+  if (k === "value" || k === "text" || k === "content") {
+    if (MEDIA_RE.test(value)) return "media";
+    if (IMAGE_RE.test(value) && /^https?:/.test(value)) return "image";
+    if (/^https?:\/\/\S+$/.test(value)) return "link";
+    if (/<h[1-3][\s>]/i.test(value)) return "heading";
+    if (group === "title" || group === "heading") return "heading";
+    return "text";
+  }
+  return null;
 }
 
 function classify(blockName: string, key: string, value: string): FieldKind | null {
