@@ -819,6 +819,10 @@ function Redaktion() {
             scanSummary={headScanSummary}
             onSave={handleSaveHead}
           />
+        ) : loadingText ? (
+          <p className="px-8 py-10 text-sm text-muted-foreground">Datei wird geladen…</p>
+        ) : activeTextPath ? (
+          <TextFileViewer path={activeTextPath} text={textContent} />
         ) : loadingHtml ? (
           <p className="px-8 py-10 text-sm text-muted-foreground">HTML-Datei wird geladen…</p>
         ) : activeHtmlPath ? (
