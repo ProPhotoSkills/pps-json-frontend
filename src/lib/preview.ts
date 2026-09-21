@@ -156,7 +156,7 @@ export function renderFullPageHtml(
 <html lang="de"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 ${renderPpsAssetHeadTags()}
-${headValues ? renderManagedHead(headValues) : ""}
+${headValues ? renderManagedHead(headValues, { includeHeadText: true }) : ""}
 <style>
   :root { color-scheme: light; }
   * { box-sizing:border-box; }
