@@ -180,8 +180,14 @@ function walk(
       if (typeof value === "string") {
         const trimmed = value.trim();
         if (!trimmed) continue;
-        const kind = classify(blockName.toLowerCase(), key, trimmed);
+        const innerIdx = path.indexOf("innerContent");
+        const kind =
+          innerIdx >= 0
+            ? classifyInner(String(path[innerIdx - 1] ?? blockName), key, trimmed)
+            : classify(blockName.toLowerCase(), key, trimmed);
         if (!kind) continue;
+        // Nur die Desktop-Variante ist redaktionell relevant.
+        if (innerIdx >= 0 && path[innerIdx + 1] && path[innerIdx + 1] !== "desktop") continue;
         out.push({
           id: `${blockIndex}:${[...path, key].join(".")}`,
           blockIndex,
