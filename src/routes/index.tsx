@@ -764,6 +764,47 @@ function Redaktion() {
               ) : null}
             </div>
 
+            <div className="mt-6">
+              <div className="flex items-center justify-between px-2">
+                <p className="label-eyebrow">Weitere Dateien (CSS, JS …)</p>
+                <span className="text-xs text-muted-foreground">{otherFiles.length}</span>
+              </div>
+              <Accordion type="multiple" className="mt-2">
+                {otherGroups.map((group) => (
+                  <AccordionItem key={group.name} value={`other-${group.name}`} className="border-b-0">
+                    <AccordionTrigger className="rounded-md px-3 py-2 text-sm hover:no-underline">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <FolderTree className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{group.name}</span>
+                      </span>
+                      <span className="mr-2 text-xs text-muted-foreground">{group.files.length}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-1">
+                      <div className="space-y-1 pl-2">
+                        {group.files.map((file) => (
+                          <button
+                            key={file}
+                            onClick={() => openTextFile(file)}
+                            className={`block w-full truncate rounded-md px-3 py-1.5 text-left font-mono text-[11px] transition-colors ${
+                              file === activeTextPath
+                                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                                : "text-muted-foreground hover:bg-sidebar-accent/60"
+                            }`}
+                            title={file}
+                          >
+                            {file.split("/").pop()}
+                          </button>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              {!otherFiles.length && !scanning ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">Keine weiteren Dateien gefunden.</p>
+              ) : null}
+            </div>
+
           </div>
         </ScrollArea>
       </aside>
