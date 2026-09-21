@@ -63,16 +63,16 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
         <Button type="button" variant={scope === "global" ? "default" : "outline"} onClick={() => setScope("global")}>
           <Globe2 className="size-4" /> Für alle Seiten
         </Button>
-        <Button type="button" variant={scope === "page" ? "default" : "outline"} onClick={() => setScope("page")} disabled={!htmlFiles.length}>
-          Nur für eine Seite
+        <Button type="button" variant={scope === "page" ? "default" : "outline"} onClick={() => setScope("page")} disabled={!files.length}>
+          Nur für eine Datei
         </Button>
       </div>
 
       {scope === "page" ? (
         <div className="mt-5 space-y-2">
-          <Label htmlFor="head-page">HTML-Seite</Label>
+          <Label htmlFor="head-page">HTML- oder JSON-Datei</Label>
           <select id="head-page" value={path} onChange={(event) => setPath(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-            {htmlFiles.map((file) => <option key={file} value={file}>{file}</option>)}
+            {files.map((file) => <option key={file} value={file}>{file}</option>)}
           </select>
           <p className="text-xs text-muted-foreground">
             {pageHasOwnValues
