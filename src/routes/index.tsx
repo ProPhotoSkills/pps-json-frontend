@@ -298,6 +298,34 @@ function Redaktion() {
     }
     return groups;
   }, [jsonFiles]);
+  // Alle übrigen Dateien (CSS, JS, Bilder, Textdateien …) aus dem Repo.
+  const otherFiles = useMemo(
+    () =>
+      treePaths
+        .filter((line) => line.startsWith("📄"))
+        .map((line) => line.slice(2).trim())
+        .filter((path) => {
+          const lower = path.toLowerCase();
+          return !lower.endsWith(".html") && !lower.endsWith(".json");
+        }),
+    [treePaths],
+  );
+  const otherGroups = useMemo(() => {
+    const groups: { name: string; files: string[] }[] = [];
+    const index = new Map<string, number>();
+    for (const file of otherFiles) {
+      const parts = file.split("/");
+      const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "/";
+      const existing = index.get(folder);
+      if (existing === undefined) {
+        index.set(folder, groups.length);
+        groups.push({ name: folder, files: [file] });
+      } else {
+        groups[existing]?.files.push(file);
+      }
+    }
+    return groups;
+  }, [otherFiles]);
   const selectedHeaderMarkups = activeHeaderPath && globalMarkups[activeHeaderPath]
     ? [globalMarkups[activeHeaderPath]]
     : [];
