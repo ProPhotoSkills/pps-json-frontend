@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectCard } from "@/components/redaktion/ConnectCard";
 import { ChapterEditor } from "@/components/redaktion/ChapterEditor";
 import { HtmlViewer } from "@/components/redaktion/HtmlViewer";
+import { TextFileViewer } from "@/components/redaktion/TextFileViewer";
 import { HeadSettingsEditor } from "@/components/redaktion/HeadSettingsEditor";
 import {
   commitFile,
