@@ -340,8 +340,30 @@ function Redaktion() {
       ? "footer"
       : "chapter";
 
+  const openTextFile = async (path: string) => {
+    if (!cfg) return;
+    setActivePath(null);
+    setChapterFile(null);
+    setEditingHead(false);
+    setActiveHtmlPath(null);
+    setHtmlContent("");
+    setActiveTextPath(path);
+    setTextContent("");
+    setLoadingText(true);
+    try {
+      const { text } = await fetchFile(cfg, path);
+      setTextContent(text);
+    } catch (err) {
+      toast.error(describe(err));
+      setActiveTextPath(null);
+    } finally {
+      setLoadingText(false);
+    }
+  };
+
   const openHtml = async (path: string) => {
     if (!cfg) return;
+    setActiveTextPath(null);
     setActivePath(null);
     setEditingHead(false);
     setChapterFile(null);
