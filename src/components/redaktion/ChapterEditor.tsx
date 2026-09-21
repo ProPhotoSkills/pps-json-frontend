@@ -45,6 +45,7 @@ export function ChapterEditor({
   headValues,
   fields,
   values,
+  original,
   dirty,
   saving,
   onChange,
@@ -54,7 +55,8 @@ export function ChapterEditor({
   const fileName = path.split("/").pop() ?? path;
   const meta = parseChapterName(fileName);
   const kindLabel = documentKind === "header" ? "Header" : documentKind === "footer" ? "Footer" : "Kapitel";
-  const [tab, setTab] = useState<"preview" | "fields">("preview");
+  const [tab, setTab] = useState<"preview" | "blocks" | "fields">("preview");
+
 
   const previewHtml = useMemo(() => {
     if (!markup) return "";
