@@ -45,6 +45,7 @@ export function effectiveHeadValues(settings: HeadSettings, path?: string | null
     pinterestVerification:
       page?.pinterestVerification?.trim() || settings.global.pinterestVerification,
     additionalHeadHtml: page?.additionalHeadHtml?.trim() || settings.global.additionalHeadHtml,
+    headText: page?.headText?.trim() || settings.global.headText,
   };
 }
 
