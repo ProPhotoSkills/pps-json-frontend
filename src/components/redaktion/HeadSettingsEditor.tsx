@@ -84,6 +84,21 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
 
       <div className="mt-7 space-y-6">
         <div className="space-y-2">
+          <Label htmlFor="head-text">Kopfzeilen-Text (ausgelesen)</Label>
+          <p className="text-xs text-muted-foreground">
+            Der komplette Kopfbereich, so wie er ausgelesen wurde – zum Beispiel Google-Sprachen,
+            Schriften und Meta-Angaben. Hier kannst du ihn direkt korrigieren.
+          </p>
+          <Textarea
+            id="head-text"
+            rows={18}
+            value={values.headText}
+            onChange={(event) => update("headText", event.target.value)}
+            placeholder="Noch kein Kopfzeilen-Text ausgelesen"
+            className="font-mono text-xs"
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="google-analytics-id">Google Analytics Measurement ID</Label>
           <Input id="google-analytics-id" value={values.googleAnalyticsId} onChange={(event) => update("googleAnalyticsId", event.target.value)} placeholder="G-XXXXXXXXXX" />
         </div>
