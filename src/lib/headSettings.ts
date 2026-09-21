@@ -4,6 +4,8 @@ export type HeadValues = {
   googleAnalyticsId: string;
   pinterestVerification: string;
   additionalHeadHtml: string;
+  /** Vollständiger, ausgelesener Kopfzeilen-Text (z. B. Google-Sprachen, Meta-Tags). */
+  headText: string;
 };
 
 export type HeadSettings = {
@@ -20,6 +22,7 @@ export const EMPTY_HEAD_VALUES: HeadValues = {
   googleAnalyticsId: "",
   pinterestVerification: "",
   additionalHeadHtml: "",
+  headText: "",
 };
 
 export const EMPTY_HEAD_SETTINGS: HeadSettings = {
@@ -42,6 +45,7 @@ export function effectiveHeadValues(settings: HeadSettings, path?: string | null
     pinterestVerification:
       page?.pinterestVerification?.trim() || settings.global.pinterestVerification,
     additionalHeadHtml: page?.additionalHeadHtml?.trim() || settings.global.additionalHeadHtml,
+    headText: page?.headText?.trim() || settings.global.headText,
   };
 }
 
@@ -90,6 +94,7 @@ export function extractHeadValuesFromHtml(html: string): HeadValues {
     googleAnalyticsId: decodeHtml(analyticsId.trim()),
     pinterestVerification,
     additionalHeadHtml: additionalTags.join("\n"),
+    headText: head.trim(),
   };
 }
 
@@ -108,12 +113,14 @@ export function mergeExtractedHeadSettings(
     googleAnalyticsId: mostCommon(discovered.map((item) => item.googleAnalyticsId)),
     pinterestVerification: mostCommon(discovered.map((item) => item.pinterestVerification)),
     additionalHeadHtml: mostCommon(discovered.map((item) => item.additionalHeadHtml)),
+    headText: mostCommon(discovered.map((item) => item.headText)),
   };
   const global: HeadValues = {
     googleAnalyticsId: stored.global.googleAnalyticsId.trim() || inferredGlobal.googleAnalyticsId,
     pinterestVerification:
       stored.global.pinterestVerification.trim() || inferredGlobal.pinterestVerification,
     additionalHeadHtml: stored.global.additionalHeadHtml.trim() || inferredGlobal.additionalHeadHtml,
+    headText: stored.global.headText.trim() || inferredGlobal.headText,
   };
   const pages = { ...stored.pages };
 
@@ -139,27 +146,36 @@ function escapeAttribute(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
-export function renderManagedHead(values: HeadValues): string {
+function stripDocumentTags(value: string): string {
+  return value
+    .replace(/<!doctype[^>]*>/gi, "")
+    .replace(/<\/?(?:html|head|body)[^>]*>/gi, "")
+    .trim();
+}
+
+export function renderManagedHead(
+  values: HeadValues,
+  options?: { includeHeadText?: boolean },
+): string {
   const tags: string[] = [];
   const analyticsId = values.googleAnalyticsId.trim();
   const pinterest = values.pinterestVerification.trim();
 
-  if (analyticsId) {
+  const headText = options?.includeHeadText ? stripDocumentTags(values.headText) : "";
+  if (headText) tags.push(headText);
+
+  if (analyticsId && !headText.includes(analyticsId)) {
     const id = escapeAttribute(analyticsId);
     tags.push(`<!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${id}');</script>`);
   }
-  if (pinterest) {
+  if (pinterest && !headText.includes(pinterest)) {
     tags.push(`<meta name="p:domain_verify" content="${escapeAttribute(pinterest)}" />`);
   }
-  if (values.additionalHeadHtml.trim()) {
-    tags.push(
-      values.additionalHeadHtml
-        .replace(/<!doctype[^>]*>/gi, "")
-        .replace(/<\/?(?:html|head|body)[^>]*>/gi, "")
-        .trim(),
-    );
+  const additional = stripDocumentTags(values.additionalHeadHtml);
+  if (additional && !headText.includes(additional)) {
+    tags.push(additional);
   }
   return tags.join("\n");
 }

@@ -37,6 +37,7 @@ import {
 import { rebuildCategory } from "@/lib/rebuild";
 import {
   EMPTY_HEAD_SETTINGS,
+  EMPTY_HEAD_VALUES,
   HEAD_SETTINGS_PATH,
   effectiveHeadValues,
   extractHeadValuesFromHtml,
@@ -193,7 +194,7 @@ function Redaktion() {
             const { text } = await fetchFile(config, path);
             return [path, extractHeadValuesFromHtml(text)] as const;
           } catch {
-            return [path, { googleAnalyticsId: "", pinterestVerification: "", additionalHeadHtml: "" }] as const;
+            return [path, EMPTY_HEAD_VALUES] as const;
           }
         }),
       );
@@ -300,6 +301,7 @@ function Redaktion() {
   const selectedFooterMarkups = activeFooterPath && globalMarkups[activeFooterPath]
     ? [globalMarkups[activeFooterPath]]
     : [];
+  const headTargetFiles = useMemo(() => [...htmlFiles, ...jsonFiles], [htmlFiles, jsonFiles]);
   const activeHeadValues = effectiveHeadValues(headSettings, activeHtmlPath);
   const activeDocumentKind = activePath?.split("/")[0]?.toLowerCase() === "header"
     ? "header"
@@ -716,8 +718,8 @@ function Redaktion() {
         {editingHead ? (
           <HeadSettingsEditor
             settings={headSettings}
-            htmlFiles={htmlFiles}
-            initialPath={activeHtmlPath}
+            files={headTargetFiles}
+            initialPath={activeHtmlPath ?? activePath}
             saving={savingHead}
             scanSummary={headScanSummary}
             onSave={handleSaveHead}
@@ -740,7 +742,7 @@ function Redaktion() {
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
             headerMarkups={selectedHeaderMarkups}
             footerMarkups={selectedFooterMarkups}
-            headValues={headSettings.global}
+            headValues={effectiveHeadValues(headSettings, activePath)}
             fields={fields}
             values={values}
             original={original}

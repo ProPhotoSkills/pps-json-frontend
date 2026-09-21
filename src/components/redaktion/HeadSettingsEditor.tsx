@@ -15,16 +15,16 @@ import {
 
 type Props = {
   settings: HeadSettings;
-  htmlFiles: string[];
+  files: string[];
   initialPath: string | null;
   saving: boolean;
   scanSummary: HeadScanSummary;
   onSave: (scope: "global" | "page", path: string | null, values: HeadValues) => void;
 };
 
-export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, scanSummary, onSave }: Props) {
+export function HeadSettingsEditor({ settings, files, initialPath, saving, scanSummary, onSave }: Props) {
   const [scope, setScope] = useState<"global" | "page">(initialPath ? "page" : "global");
-  const [path, setPath] = useState(initialPath ?? htmlFiles[0] ?? "");
+  const [path, setPath] = useState(initialPath ?? files[0] ?? "");
   const source = useMemo(
     () =>
       scope === "global"
@@ -63,16 +63,16 @@ export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, s
         <Button type="button" variant={scope === "global" ? "default" : "outline"} onClick={() => setScope("global")}>
           <Globe2 className="size-4" /> Für alle Seiten
         </Button>
-        <Button type="button" variant={scope === "page" ? "default" : "outline"} onClick={() => setScope("page")} disabled={!htmlFiles.length}>
-          Nur für eine Seite
+        <Button type="button" variant={scope === "page" ? "default" : "outline"} onClick={() => setScope("page")} disabled={!files.length}>
+          Nur für eine Datei
         </Button>
       </div>
 
       {scope === "page" ? (
         <div className="mt-5 space-y-2">
-          <Label htmlFor="head-page">HTML-Seite</Label>
+          <Label htmlFor="head-page">HTML- oder JSON-Datei</Label>
           <select id="head-page" value={path} onChange={(event) => setPath(event.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-            {htmlFiles.map((file) => <option key={file} value={file}>{file}</option>)}
+            {files.map((file) => <option key={file} value={file}>{file}</option>)}
           </select>
           <p className="text-xs text-muted-foreground">
             {pageHasOwnValues
@@ -83,6 +83,21 @@ export function HeadSettingsEditor({ settings, htmlFiles, initialPath, saving, s
       ) : null}
 
       <div className="mt-7 space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="head-text">Kopfzeilen-Text (ausgelesen)</Label>
+          <p className="text-xs text-muted-foreground">
+            Der komplette Kopfbereich, so wie er ausgelesen wurde – zum Beispiel Google-Sprachen,
+            Schriften und Meta-Angaben. Hier kannst du ihn direkt korrigieren.
+          </p>
+          <Textarea
+            id="head-text"
+            rows={18}
+            value={values.headText}
+            onChange={(event) => update("headText", event.target.value)}
+            placeholder="Noch kein Kopfzeilen-Text ausgelesen"
+            className="font-mono text-xs"
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="google-analytics-id">Google Analytics Measurement ID</Label>
           <Input id="google-analytics-id" value={values.googleAnalyticsId} onChange={(event) => update("googleAnalyticsId", event.target.value)} placeholder="G-XXXXXXXXXX" />
