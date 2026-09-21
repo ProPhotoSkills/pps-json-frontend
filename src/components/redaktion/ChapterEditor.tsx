@@ -8,6 +8,7 @@ import type { EditableField } from "@/lib/divi";
 import { parseChapterName } from "@/lib/divi";
 import { renderFullPageHtml } from "@/lib/preview";
 import type { HeadValues } from "@/lib/headSettings";
+import { BlockEditor } from "./BlockEditor";
 
 type Props = {
   path: string;
@@ -18,12 +19,14 @@ type Props = {
   headValues: HeadValues;
   fields: EditableField[];
   values: Record<string, string>;
+  original: Record<string, string>;
   dirty: boolean;
   saving: boolean;
   onChange: (id: string, value: string) => void;
   onSave: () => void;
   onReset: () => void;
 };
+
 
 const KIND_LABEL: Record<EditableField["kind"], string> = {
   heading: "Überschrift",
@@ -42,6 +45,7 @@ export function ChapterEditor({
   headValues,
   fields,
   values,
+  original,
   dirty,
   saving,
   onChange,
@@ -51,7 +55,8 @@ export function ChapterEditor({
   const fileName = path.split("/").pop() ?? path;
   const meta = parseChapterName(fileName);
   const kindLabel = documentKind === "header" ? "Header" : documentKind === "footer" ? "Footer" : "Kapitel";
-  const [tab, setTab] = useState<"preview" | "fields">("preview");
+  const [tab, setTab] = useState<"preview" | "blocks" | "fields">("preview");
+
 
   const previewHtml = useMemo(() => {
     if (!markup) return "";
@@ -97,12 +102,22 @@ export function ChapterEditor({
         <Button
           type="button"
           variant="ghost"
+          onClick={() => setTab("blocks")}
+          className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
+            tab === "blocks" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          Block-Editor
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setTab("fields")}
           className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "fields" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
         >
-          Inhalte bearbeiten
+          Einzelfelder
         </Button>
       </div>
 
@@ -115,7 +130,10 @@ export function ChapterEditor({
             className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />
         </div>
+      ) : tab === "blocks" ? (
+        <BlockEditor fields={fields} values={values} original={original} onChange={onChange} />
       ) : fields.length === 0 ? (
+
           <p className="mt-10 text-sm text-muted-foreground">
           In dieser Datei wurden keine editierbaren Inhalte gefunden.
         </p>
