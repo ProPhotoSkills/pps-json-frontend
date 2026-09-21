@@ -94,6 +94,7 @@ export function extractHeadValuesFromHtml(html: string): HeadValues {
     googleAnalyticsId: decodeHtml(analyticsId.trim()),
     pinterestVerification,
     additionalHeadHtml: additionalTags.join("\n"),
+    headText: head.trim(),
   };
 }
 
