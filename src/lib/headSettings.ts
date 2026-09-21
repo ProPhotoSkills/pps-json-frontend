@@ -161,27 +161,21 @@ export function renderManagedHead(
   const analyticsId = values.googleAnalyticsId.trim();
   const pinterest = values.pinterestVerification.trim();
 
-  if (options?.includeHeadText && values.headText.trim()) {
-    tags.push(stripDocumentTags(values.headText));
-  }
+  const headText = options?.includeHeadText ? stripDocumentTags(values.headText) : "";
+  if (headText) tags.push(headText);
 
-
-  if (analyticsId) {
+  if (analyticsId && !headText.includes(analyticsId)) {
     const id = escapeAttribute(analyticsId);
     tags.push(`<!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${id}');</script>`);
   }
-  if (pinterest) {
+  if (pinterest && !headText.includes(pinterest)) {
     tags.push(`<meta name="p:domain_verify" content="${escapeAttribute(pinterest)}" />`);
   }
-  if (values.additionalHeadHtml.trim()) {
-    tags.push(
-      values.additionalHeadHtml
-        .replace(/<!doctype[^>]*>/gi, "")
-        .replace(/<\/?(?:html|head|body)[^>]*>/gi, "")
-        .trim(),
-    );
+  const additional = stripDocumentTags(values.additionalHeadHtml);
+  if (additional && !headText.includes(additional)) {
+    tags.push(additional);
   }
   return tags.join("\n");
 }
