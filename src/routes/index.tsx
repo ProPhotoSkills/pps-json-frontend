@@ -716,8 +716,8 @@ function Redaktion() {
         {editingHead ? (
           <HeadSettingsEditor
             settings={headSettings}
-            htmlFiles={htmlFiles}
-            initialPath={activeHtmlPath}
+            files={headTargetFiles}
+            initialPath={activeHtmlPath ?? activePath}
             saving={savingHead}
             scanSummary={headScanSummary}
             onSave={handleSaveHead}
