@@ -11,6 +11,7 @@ import type { HeadValues } from "@/lib/headSettings";
 
 type Props = {
   path: string;
+  documentKind: "chapter" | "header" | "footer";
   markup: string;
   headerMarkups: string[];
   footerMarkups: string[];
@@ -33,6 +34,7 @@ const KIND_LABEL: Record<EditableField["kind"], string> = {
 
 export function ChapterEditor({
   path,
+  documentKind,
   markup,
   headerMarkups,
   footerMarkups,
@@ -45,7 +47,9 @@ export function ChapterEditor({
   onSave,
   onReset,
 }: Props) {
-  const meta = parseChapterName(path.split("/")[1] ?? path);
+  const fileName = path.split("/").pop() ?? path;
+  const meta = parseChapterName(fileName);
+  const kindLabel = documentKind === "header" ? "Header" : documentKind === "footer" ? "Footer" : "Kapitel";
   const [tab, setTab] = useState<"preview" | "fields">("preview");
 
   const previewHtml = useMemo(() => {
@@ -58,11 +62,13 @@ export function ChapterEditor({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="label-eyebrow">
-            {meta.modul !== null
+            {documentKind === "chapter" && meta.modul !== null
               ? `Modul ${String(meta.modul).padStart(2, "0")} · Kapitel ${String(meta.kapitel).padStart(2, "0")}`
-              : "Kapitel"}
+              : kindLabel}
           </p>
-          <h2 className="mt-1 text-3xl">{meta.slug.replace(/-/g, " ")}</h2>
+          <h2 className="mt-1 text-3xl">
+            {documentKind === "chapter" ? meta.slug.replace(/-/g, " ") : fileName.replace(/\.json$/i, "")}
+          </h2>
           <p className="mt-1 font-mono text-xs text-muted-foreground">{path}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -71,28 +77,32 @@ export function ChapterEditor({
             Verwerfen
           </Button>
           <Button onClick={onSave} disabled={!dirty || saving}>
-            {saving ? "Speichere…" : "Speichern & neu bauen"}
+            {saving ? "Speichere…" : documentKind === "chapter" ? "Speichern & neu bauen" : `${kindLabel} speichern`}
           </Button>
         </div>
       </div>
 
       <div className="mt-6 inline-flex rounded-lg border border-border bg-muted/40 p-1">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setTab("preview")}
-          className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
+          className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "preview" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
         >
           HTML-Vorschau
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setTab("fields")}
-          className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
+          className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "fields" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
         >
           Inhalte bearbeiten
-        </button>
+        </Button>
       </div>
 
       {tab === "preview" ? (
@@ -105,8 +115,8 @@ export function ChapterEditor({
           />
         </div>
       ) : fields.length === 0 ? (
-        <p className="mt-10 text-sm text-muted-foreground">
-          In diesem Kapitel wurden keine editierbaren Inhalte gefunden.
+          <p className="mt-10 text-sm text-muted-foreground">
+          In dieser Datei wurden keine editierbaren Inhalte gefunden.
         </p>
       ) : (
         <div className="mt-8 space-y-4">
