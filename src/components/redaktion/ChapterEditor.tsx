@@ -102,12 +102,22 @@ export function ChapterEditor({
         <Button
           type="button"
           variant="ghost"
+          onClick={() => setTab("blocks")}
+          className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
+            tab === "blocks" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
+          }`}
+        >
+          Block-Editor
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setTab("fields")}
           className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "fields" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
         >
-          Inhalte bearbeiten
+          Einzelfelder
         </Button>
       </div>
 
@@ -120,7 +130,10 @@ export function ChapterEditor({
             className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />
         </div>
+      ) : tab === "blocks" ? (
+        <BlockEditor fields={fields} values={values} original={original} onChange={onChange} />
       ) : fields.length === 0 ? (
+
           <p className="mt-10 text-sm text-muted-foreground">
           In dieser Datei wurden keine editierbaren Inhalte gefunden.
         </p>
