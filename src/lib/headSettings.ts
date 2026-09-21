@@ -146,10 +146,25 @@ function escapeAttribute(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
-export function renderManagedHead(values: HeadValues): string {
+function stripDocumentTags(value: string): string {
+  return value
+    .replace(/<!doctype[^>]*>/gi, "")
+    .replace(/<\/?(?:html|head|body)[^>]*>/gi, "")
+    .trim();
+}
+
+export function renderManagedHead(
+  values: HeadValues,
+  options?: { includeHeadText?: boolean },
+): string {
   const tags: string[] = [];
   const analyticsId = values.googleAnalyticsId.trim();
   const pinterest = values.pinterestVerification.trim();
+
+  if (options?.includeHeadText && values.headText.trim()) {
+    tags.push(stripDocumentTags(values.headText));
+  }
+
 
   if (analyticsId) {
     const id = escapeAttribute(analyticsId);
