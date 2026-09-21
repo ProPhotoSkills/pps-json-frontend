@@ -8,6 +8,7 @@ import type { EditableField } from "@/lib/divi";
 import { parseChapterName } from "@/lib/divi";
 import { renderFullPageHtml } from "@/lib/preview";
 import type { HeadValues } from "@/lib/headSettings";
+import { BlockEditor } from "./BlockEditor";
 
 type Props = {
   path: string;
@@ -18,12 +19,14 @@ type Props = {
   headValues: HeadValues;
   fields: EditableField[];
   values: Record<string, string>;
+  original: Record<string, string>;
   dirty: boolean;
   saving: boolean;
   onChange: (id: string, value: string) => void;
   onSave: () => void;
   onReset: () => void;
 };
+
 
 const KIND_LABEL: Record<EditableField["kind"], string> = {
   heading: "Überschrift",
