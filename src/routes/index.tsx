@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConnectCard } from "@/components/redaktion/ConnectCard";
 import { ChapterEditor } from "@/components/redaktion/ChapterEditor";
 import { HtmlViewer } from "@/components/redaktion/HtmlViewer";
+import { TextFileViewer } from "@/components/redaktion/TextFileViewer";
 import { HeadSettingsEditor } from "@/components/redaktion/HeadSettingsEditor";
 import {
   commitFile,
@@ -102,6 +103,9 @@ function Redaktion() {
   const [activeHtmlPath, setActiveHtmlPath] = useState<string | null>(null);
   const [htmlContent, setHtmlContent] = useState("");
   const [loadingHtml, setLoadingHtml] = useState(false);
+  const [activeTextPath, setActiveTextPath] = useState<string | null>(null);
+  const [textContent, setTextContent] = useState("");
+  const [loadingText, setLoadingText] = useState(false);
   const [headSettings, setHeadSettings] = useState<HeadSettings>(EMPTY_HEAD_SETTINGS);
   const [editingHead, setEditingHead] = useState(false);
   const [savingHead, setSavingHead] = useState(false);
@@ -295,6 +299,34 @@ function Redaktion() {
     }
     return groups;
   }, [jsonFiles]);
+  // Alle übrigen Dateien (CSS, JS, Bilder, Textdateien …) aus dem Repo.
+  const otherFiles = useMemo(
+    () =>
+      treePaths
+        .filter((line) => line.startsWith("📄"))
+        .map((line) => line.slice(2).trim())
+        .filter((path) => {
+          const lower = path.toLowerCase();
+          return !lower.endsWith(".html") && !lower.endsWith(".json");
+        }),
+    [treePaths],
+  );
+  const otherGroups = useMemo(() => {
+    const groups: { name: string; files: string[] }[] = [];
+    const index = new Map<string, number>();
+    for (const file of otherFiles) {
+      const parts = file.split("/");
+      const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "/";
+      const existing = index.get(folder);
+      if (existing === undefined) {
+        index.set(folder, groups.length);
+        groups.push({ name: folder, files: [file] });
+      } else {
+        groups[existing]?.files.push(file);
+      }
+    }
+    return groups;
+  }, [otherFiles]);
   const selectedHeaderMarkups = activeHeaderPath && globalMarkups[activeHeaderPath]
     ? [globalMarkups[activeHeaderPath]]
     : [];
@@ -309,8 +341,30 @@ function Redaktion() {
       ? "footer"
       : "chapter";
 
+  const openTextFile = async (path: string) => {
+    if (!cfg) return;
+    setActivePath(null);
+    setChapterFile(null);
+    setEditingHead(false);
+    setActiveHtmlPath(null);
+    setHtmlContent("");
+    setActiveTextPath(path);
+    setTextContent("");
+    setLoadingText(true);
+    try {
+      const { text } = await fetchFile(cfg, path);
+      setTextContent(text);
+    } catch (err) {
+      toast.error(describe(err));
+      setActiveTextPath(null);
+    } finally {
+      setLoadingText(false);
+    }
+  };
+
   const openHtml = async (path: string) => {
     if (!cfg) return;
+    setActiveTextPath(null);
     setActivePath(null);
     setEditingHead(false);
     setChapterFile(null);
@@ -331,6 +385,7 @@ function Redaktion() {
   const openChapter = async (path: string) => {
     if (!cfg) return;
     setActiveHtmlPath(null);
+    setActiveTextPath(null);
     setEditingHead(false);
     setHtmlContent("");
     setActivePath(path);
@@ -710,6 +765,47 @@ function Redaktion() {
               ) : null}
             </div>
 
+            <div className="mt-6">
+              <div className="flex items-center justify-between px-2">
+                <p className="label-eyebrow">Weitere Dateien (CSS, JS …)</p>
+                <span className="text-xs text-muted-foreground">{otherFiles.length}</span>
+              </div>
+              <Accordion type="multiple" className="mt-2">
+                {otherGroups.map((group) => (
+                  <AccordionItem key={group.name} value={`other-${group.name}`} className="border-b-0">
+                    <AccordionTrigger className="rounded-md px-3 py-2 text-sm hover:no-underline">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <FolderTree className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{group.name}</span>
+                      </span>
+                      <span className="mr-2 text-xs text-muted-foreground">{group.files.length}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-1">
+                      <div className="space-y-1 pl-2">
+                        {group.files.map((file) => (
+                          <button
+                            key={file}
+                            onClick={() => openTextFile(file)}
+                            className={`block w-full truncate rounded-md px-3 py-1.5 text-left font-mono text-[11px] transition-colors ${
+                              file === activeTextPath
+                                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                                : "text-muted-foreground hover:bg-sidebar-accent/60"
+                            }`}
+                            title={file}
+                          >
+                            {file.split("/").pop()}
+                          </button>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              {!otherFiles.length && !scanning ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">Keine weiteren Dateien gefunden.</p>
+              ) : null}
+            </div>
+
           </div>
         </ScrollArea>
       </aside>
@@ -724,6 +820,10 @@ function Redaktion() {
             scanSummary={headScanSummary}
             onSave={handleSaveHead}
           />
+        ) : loadingText ? (
+          <p className="px-8 py-10 text-sm text-muted-foreground">Datei wird geladen…</p>
+        ) : activeTextPath ? (
+          <TextFileViewer path={activeTextPath} text={textContent} />
         ) : loadingHtml ? (
           <p className="px-8 py-10 text-sm text-muted-foreground">HTML-Datei wird geladen…</p>
         ) : activeHtmlPath ? (
