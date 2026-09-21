@@ -30,6 +30,7 @@ const KIND_LABEL: Record<EditableField["kind"], string> = {
   text: "Text",
   image: "Bild",
   link: "Link",
+  media: "Audio/Video",
 };
 
 export function ChapterEditor({
