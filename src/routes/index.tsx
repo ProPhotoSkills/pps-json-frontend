@@ -267,6 +267,33 @@ function Redaktion() {
     }
     return groups;
   }, [htmlFiles]);
+  const jsonFiles = useMemo(
+    () =>
+      treePaths
+        .filter((line) => line.startsWith("📄") && line.toLowerCase().endsWith(".json"))
+        .map((line) => line.slice(2).trim())
+        .filter((path) => {
+          const rootFolder = path.split("/")[0]?.toLowerCase();
+          return rootFolder !== "header" && rootFolder !== "footer" && path !== HEAD_SETTINGS_PATH;
+        }),
+    [treePaths],
+  );
+  const jsonGroups = useMemo(() => {
+    const groups: { name: string; files: string[] }[] = [];
+    const index = new Map<string, number>();
+    for (const file of jsonFiles) {
+      const parts = file.split("/");
+      const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "/";
+      const existing = index.get(folder);
+      if (existing === undefined) {
+        index.set(folder, groups.length);
+        groups.push({ name: folder, files: [file] });
+      } else {
+        groups[existing]?.files.push(file);
+      }
+    }
+    return groups;
+  }, [jsonFiles]);
   const selectedHeaderMarkups = activeHeaderPath && globalMarkups[activeHeaderPath]
     ? [globalMarkups[activeHeaderPath]]
     : [];
@@ -274,6 +301,11 @@ function Redaktion() {
     ? [globalMarkups[activeFooterPath]]
     : [];
   const activeHeadValues = effectiveHeadValues(headSettings, activeHtmlPath);
+  const activeDocumentKind = activePath?.split("/")[0]?.toLowerCase() === "header"
+    ? "header"
+    : activePath?.split("/")[0]?.toLowerCase() === "footer"
+      ? "footer"
+      : "chapter";
 
   const openHtml = async (path: string) => {
     if (!cfg) return;
@@ -391,7 +423,7 @@ function Redaktion() {
     setSaving(true);
     try {
       const entry = getChapterMarkup(chapterFile);
-      if (!entry) throw new Error("Kapitel enthält keine Divi-Daten.");
+      if (!entry) throw new Error("Die JSON-Datei enthält keine Divi-Daten.");
 
       const changes: Record<string, string> = {};
       for (const key of Object.keys(values)) {
@@ -404,16 +436,28 @@ function Redaktion() {
       };
       const json = JSON.stringify(nextFile, null, 2);
 
-      await commitFile(cfg, activePath, json, `Kapitel aktualisiert: ${activePath}`);
+      await commitFile(
+        cfg,
+        activePath,
+        json,
+        activeDocumentKind === "chapter"
+          ? `Kapitel aktualisiert: ${activePath}`
+          : `${activeDocumentKind === "header" ? "Header" : "Footer"} aktualisiert: ${activePath}`,
+      );
       setChapterFile(nextFile);
       setOriginal(values);
-      toast.success("Kapitel als neuer Commit gespeichert.");
+      toast.success(
+        activeDocumentKind === "chapter"
+          ? "Kapitel als neuer Commit gespeichert."
+          : `${activeDocumentKind === "header" ? "Header" : "Footer"} als neuer Commit gespeichert.`,
+      );
 
       const refreshed = await runScan(cfg);
-      const folder = activePath.split("/")[0]!;
-      const cat = refreshed.categories.find((c) => c.name === folder);
-      if (cat) await doRebuild(cfg, cat);
-      else await doRebuildAll(cfg, refreshed.categories);
+      if (activeDocumentKind === "chapter") {
+        const folder = activePath.split("/")[0];
+        const cat = refreshed.categories.find((c) => c.name === folder);
+        if (cat) await doRebuild(cfg, cat);
+      }
 
     } catch (err) {
       toast.error(describe(err));
@@ -610,81 +654,59 @@ function Redaktion() {
               )}
             </div>
 
-            <p className="label-eyebrow mt-6 px-2">Kategorien</p>
-            <div className="mt-2 space-y-1">
-              {categories.map((cat) => (
-                <button
-                  key={cat.name}
-                  onClick={() => setActiveCategory(cat.name)}
-                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                    cat.name === activeCategory
-                      ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                      : "hover:bg-sidebar-accent/60"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <FolderTree className="size-3.5 text-muted-foreground" />
-                    {cat.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{cat.chapters.length}</span>
-                </button>
-              ))}
-              {!categories.length && !scanning && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">Keine Kategorien gefunden.</p>
-              )}
+            <div className="mt-6">
+              <div className="flex items-center justify-between px-2">
+                <p className="label-eyebrow">JSON-Dateien</p>
+                <span className="text-xs text-muted-foreground">{jsonFiles.length}</span>
+              </div>
+              <Accordion type="multiple" className="mt-2">
+                {jsonGroups.map((group) => (
+                  <AccordionItem key={group.name} value={group.name} className="border-b-0">
+                    <AccordionTrigger className="rounded-md px-3 py-2 text-sm hover:no-underline">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <FolderTree className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{group.name}</span>
+                      </span>
+                      <span className="mr-2 text-xs text-muted-foreground">{group.files.length}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-1">
+                      <div className="space-y-1 pl-2">
+                        {group.files.map((file) => {
+                          const fileName = file.split("/").pop() ?? file;
+                          const meta = parseChapterName(fileName);
+                          return (
+                            <Button
+                              key={file}
+                              type="button"
+                              variant="ghost"
+                              onClick={() => openChapter(file)}
+                              className={`grid h-auto w-full grid-cols-[3rem_minmax(0,1fr)] items-center gap-2 px-2 py-1.5 text-left ${
+                                file === activePath ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground"
+                              }`}
+                              title={file}
+                            >
+                              <span className="h-9 w-12 overflow-hidden rounded-sm bg-muted">
+                                {chapterImages[file] ? (
+                                  <img src={chapterImages[file]} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  <span className="grid h-full place-items-center font-mono text-[10px]">
+                                    {meta.kapitel !== null ? String(meta.kapitel).padStart(2, "0") : "JSON"}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="min-w-0 truncate font-mono text-[11px]">{fileName}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+              {!jsonFiles.length && !scanning ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">Keine JSON-Dateien gefunden.</p>
+              ) : null}
             </div>
-
-            {category && (
-              <>
-                <div className="mt-6 flex items-center justify-between px-2">
-                  <p className="label-eyebrow">Kapitel</p>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={rebuilding}
-                    onClick={() => doRebuild(cfg, category)}
-                    title="Übersicht neu generieren"
-                  >
-                    <Hammer className="size-3.5" />
-                  </Button>
-                </div>
-                <div className="mt-2 space-y-2">
-                  {category.chapters.map((chapter) => {
-                    const meta = parseChapterName(chapter.fileName);
-                    return (
-                      <button
-                        key={chapter.path}
-                        onClick={() => openChapter(chapter.path)}
-                        className={`grid w-full grid-cols-[3.75rem_minmax(0,1fr)] items-center gap-3 rounded-md p-2 text-left text-sm transition-colors ${
-                          chapter.path === activePath
-                            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                            : "hover:bg-sidebar-accent/60"
-                        }`}
-                      >
-                        <span className="h-12 w-[3.75rem] overflow-hidden rounded-sm bg-muted">
-                          {chapterImages[chapter.path] ? (
-                            <img
-                              src={chapterImages[chapter.path]}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span className="grid h-full place-items-center font-mono text-xs text-muted-foreground">
-                              {meta.kapitel !== null ? String(meta.kapitel).padStart(2, "0") : "JSON"}
-                            </span>
-                          )}
-                        </span>
-                        <span className="min-w-0 leading-snug">{meta.slug?.replace(/-/g, " ")}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="mt-4 px-3 font-mono text-[11px] text-muted-foreground">
-                  {category.overviewPath}
-                  {!category.hasOverview && " (wird neu erzeugt)"}
-                </p>
-              </>
-            )}
 
           </div>
         </ScrollArea>
@@ -714,6 +736,7 @@ function Redaktion() {
         ) : activePath && chapterFile ? (
           <ChapterEditor
             path={activePath}
+            documentKind={activeDocumentKind}
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
             headerMarkups={selectedHeaderMarkups}
             footerMarkups={selectedFooterMarkups}
@@ -728,10 +751,9 @@ function Redaktion() {
           />
         ) : (
           <div className="mx-auto max-w-xl px-8 py-24 text-center">
-            <h2 className="text-3xl">Kapitel wählen</h2>
+            <h2 className="text-3xl">Datei wählen</h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              Links eine Kategorie und ein Kapitel auswählen. Beim Speichern wird die Datei als
-              neuer Commit abgelegt und die Kapitelübersicht der Kategorie automatisch neu gebaut.
+              Links eine JSON- oder HTML-Datei auswählen. Header und Footer werden separat verwaltet.
             </p>
           </div>
         )}
