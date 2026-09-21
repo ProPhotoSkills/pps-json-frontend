@@ -743,6 +743,8 @@ function Redaktion() {
             headValues={headSettings.global}
             fields={fields}
             values={values}
+            original={original}
+
             dirty={dirty}
             saving={saving || rebuilding}
             onChange={(id, value) => setValues((v) => ({ ...v, [id]: value }))}
