@@ -120,6 +120,7 @@ export function mergeExtractedHeadSettings(
     pinterestVerification:
       stored.global.pinterestVerification.trim() || inferredGlobal.pinterestVerification,
     additionalHeadHtml: stored.global.additionalHeadHtml.trim() || inferredGlobal.additionalHeadHtml,
+    headText: stored.global.headText.trim() || inferredGlobal.headText,
   };
   const pages = { ...stored.pages };
 
