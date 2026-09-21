@@ -102,6 +102,9 @@ function Redaktion() {
   const [activeHtmlPath, setActiveHtmlPath] = useState<string | null>(null);
   const [htmlContent, setHtmlContent] = useState("");
   const [loadingHtml, setLoadingHtml] = useState(false);
+  const [activeTextPath, setActiveTextPath] = useState<string | null>(null);
+  const [textContent, setTextContent] = useState("");
+  const [loadingText, setLoadingText] = useState(false);
   const [headSettings, setHeadSettings] = useState<HeadSettings>(EMPTY_HEAD_SETTINGS);
   const [editingHead, setEditingHead] = useState(false);
   const [savingHead, setSavingHead] = useState(false);
