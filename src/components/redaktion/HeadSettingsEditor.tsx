@@ -49,7 +49,7 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
   );
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-5 py-8 lg:px-8 lg:py-10">
+    <div className="mx-auto w-full max-w-7xl px-5 py-8 lg:px-8 lg:py-10">
       <p className="label-eyebrow">Einstellungen</p>
       <h2 className="mt-1 text-3xl">HTML-Kopf</h2>
       <p className="mt-2 text-sm text-muted-foreground">
@@ -91,7 +91,7 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
           </p>
           <Textarea
             id="head-text"
-            rows={18}
+            rows={32}
             value={values.headText}
             onChange={(event) => update("headText", event.target.value)}
             placeholder="Noch kein Kopfzeilen-Text ausgelesen"
@@ -108,7 +108,7 @@ export function HeadSettingsEditor({ settings, files, initialPath, saving, scanS
         </div>
         <div className="space-y-2">
           <Label htmlFor="additional-head-html">Weitere Codes im HTML-Kopf</Label>
-          <Textarea id="additional-head-html" rows={14} value={values.additionalHeadHtml} onChange={(event) => update("additionalHeadHtml", event.target.value)} placeholder="Zum Beispiel Bing, Übersetzung, Cookie-Einbindung oder weitere Meta-Tags" className="font-mono text-xs" />
+          <Textarea id="additional-head-html" rows={24} value={values.additionalHeadHtml} onChange={(event) => update("additionalHeadHtml", event.target.value)} placeholder="Zum Beispiel Bing, Übersetzung, Cookie-Einbindung oder weitere Meta-Tags" className="font-mono text-xs" />
         </div>
       </div>
 
