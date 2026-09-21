@@ -384,6 +384,7 @@ function Redaktion() {
   const openChapter = async (path: string) => {
     if (!cfg) return;
     setActiveHtmlPath(null);
+    setActiveTextPath(null);
     setEditingHead(false);
     setHtmlContent("");
     setActivePath(path);
