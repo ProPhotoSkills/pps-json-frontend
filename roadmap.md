@@ -5,3 +5,4 @@
 - [x] Google-Analytics- und weitere Header-Codes global sowie pro HTML-Seite einstellbar machen.
 - [x] Bestehende Kopfzeilen-Angaben aus allen HTML-Dateien einlesen und zur Korrektur anzeigen.
 - [x] JSON-Dateien nach ihren Repo-Ordnern darstellen; Header und Footer separat behandeln.
+- [x] Zusammengehörige Kapitel-JSONs und HTML-Seiten gemeinsam und mit den Footer-Kategorienfarben darstellen.

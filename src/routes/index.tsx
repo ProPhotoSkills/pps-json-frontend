@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { toast } from "sonner";
-import { Check, Code2, FolderTree, Hammer, LogOut, Pencil, RefreshCw } from "lucide-react";
+import { Braces, Check, Code2, Eye, FolderTree, Hammer, LogOut, Pencil, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -72,6 +72,36 @@ export const Route = createFileRoute("/")({
 });
 
 const SETTINGS_KEY = "pps-json.repo-settings";
+
+function normalizedChapterKey(path: string): string | null {
+  const fileName = path.split("/").pop() ?? path;
+  const base = fileName.replace(/\.(?:json|html)$/i, "").toLowerCase();
+  const match = base.match(/^t(\d+)_[el](\d+)_(.+)$/i);
+  return match ? `t${match[1]}_l${match[2]}_${match[3]}` : null;
+}
+
+function htmlChapterKey(path: string): string | null {
+  const parts = path.split("/");
+  const fileKey = normalizedChapterKey(parts[parts.length - 1] ?? path);
+  if (fileKey) return fileKey;
+  if ((parts[parts.length - 1] ?? "").toLowerCase() === "index.html" && parts.length > 1) {
+    return normalizedChapterKey(parts[parts.length - 2] ?? "");
+  }
+  return null;
+}
+
+function extractCategoryColors(markup: string, categoryNames: string[]): Record<string, string> {
+  const colors: Record<string, string> = {};
+  for (const category of categoryNames) {
+    const escaped = category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const matches = [
+      ...markup.matchAll(new RegExp(`color\\s*:\\s*(#[0-9a-fA-F]{6})[\\s\\S]{0,220}?${escaped}`, "gi")),
+    ];
+    const closest = matches.sort((a, b) => a[0].length - b[0].length)[0];
+    if (closest?.[1]) colors[category.toLowerCase()] = closest[1];
+  }
+  return colors;
+}
 
 function describe(err: unknown): string {
   if (err instanceof GitHubError) return err.message;
@@ -254,24 +284,6 @@ function Redaktion() {
         .map((line) => line.slice(2).trim()),
     [treePaths],
   );
-  // HTML-Dateien genau in dem Ordner anzeigen, in dem sie im Repo liegen.
-  // Reihenfolge bleibt wie im Repo-Scan – es wird nichts umsortiert.
-  const htmlGroups = useMemo(() => {
-    const groups: { name: string; files: string[] }[] = [];
-    const index = new Map<string, number>();
-    for (const file of htmlFiles) {
-      const parts = file.split("/");
-      const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "/";
-      const existing = index.get(folder);
-      if (existing === undefined) {
-        index.set(folder, groups.length);
-        groups.push({ name: folder, files: [file] });
-      } else {
-        groups[existing]!.files.push(file);
-      }
-    }
-    return groups;
-  }, [htmlFiles]);
   const jsonFiles = useMemo(
     () =>
       treePaths
@@ -283,22 +295,46 @@ function Redaktion() {
         }),
     [treePaths],
   );
-  const jsonGroups = useMemo(() => {
-    const groups: { name: string; files: string[] }[] = [];
-    const index = new Map<string, number>();
-    for (const file of jsonFiles) {
-      const parts = file.split("/");
+  const pairedChapters = useMemo(() => {
+    const htmlByKey = new Map<string, string[]>();
+    for (const htmlPath of htmlFiles) {
+      const key = htmlChapterKey(htmlPath);
+      if (!key) continue;
+      const matches = htmlByKey.get(key) ?? [];
+      matches.push(htmlPath);
+      htmlByKey.set(key, matches);
+    }
+
+    const matchedHtml = new Set<string>();
+    const groups: {
+      name: string;
+      category: string;
+      chapters: { jsonPath: string; htmlPaths: string[] }[];
+    }[] = [];
+    const groupIndex = new Map<string, number>();
+
+    for (const jsonPath of jsonFiles) {
+      const parts = jsonPath.split("/");
       const folder = parts.length > 1 ? parts.slice(0, -1).join("/") : "/";
-      const existing = index.get(folder);
+      const categoryName = parts[0] ?? folder;
+      const key = normalizedChapterKey(jsonPath);
+      const htmlPaths = key ? (htmlByKey.get(key) ?? []) : [];
+      htmlPaths.forEach((path) => matchedHtml.add(path));
+      const chapter = { jsonPath, htmlPaths };
+      const existing = groupIndex.get(folder);
       if (existing === undefined) {
-        index.set(folder, groups.length);
-        groups.push({ name: folder, files: [file] });
+        groupIndex.set(folder, groups.length);
+        groups.push({ name: folder, category: categoryName, chapters: [chapter] });
       } else {
-        groups[existing]?.files.push(file);
+        groups[existing]?.chapters.push(chapter);
       }
     }
-    return groups;
-  }, [jsonFiles]);
+
+    return {
+      groups,
+      unmatchedHtml: htmlFiles.filter((path) => !matchedHtml.has(path)),
+    };
+  }, [htmlFiles, jsonFiles]);
   // Alle übrigen Dateien (CSS, JS, Bilder, Textdateien …) aus dem Repo.
   const otherFiles = useMemo(
     () =>
@@ -333,6 +369,10 @@ function Redaktion() {
   const selectedFooterMarkups = activeFooterPath && globalMarkups[activeFooterPath]
     ? [globalMarkups[activeFooterPath]]
     : [];
+  const categoryColors = useMemo(
+    () => extractCategoryColors(selectedFooterMarkups.join("\n"), pairedChapters.groups.map((group) => group.category)),
+    [selectedFooterMarkups, pairedChapters.groups],
+  );
   const headTargetFiles = useMemo(() => [...htmlFiles, ...jsonFiles], [htmlFiles, jsonFiles]);
   const activeHeadValues = effectiveHeadValues(headSettings, activeHtmlPath);
   const activeDocumentKind = activePath?.split("/")[0]?.toLowerCase() === "header"
@@ -668,102 +708,120 @@ function Redaktion() {
 
             <div className="mt-6">
               <div className="flex items-center justify-between px-2">
-                <p className="label-eyebrow">HTML-Dateien</p>
-                <span className="text-xs text-muted-foreground">{htmlFiles.length}</span>
-              </div>
-              <Accordion type="multiple" className="mt-2">
-                {htmlGroups.map((group) => (
-                  <AccordionItem key={group.name} value={group.name} className="border-b-0">
-                    <AccordionTrigger className="rounded-md px-3 py-2 text-sm hover:no-underline">
-                      <span className="flex items-center gap-2">
-                        <FolderTree className="size-3.5 text-muted-foreground" />
-                        {group.name}
-                      </span>
-                      <span className="mr-2 text-xs text-muted-foreground">
-                        {group.files.length}
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-1">
-                      <div className="space-y-1 pl-2">
-                        {group.files.map((file) => (
-                          <button
-                            key={file}
-                            onClick={() => openHtml(file)}
-                            className={`block w-full truncate rounded-md px-3 py-1.5 text-left font-mono text-[11px] transition-colors ${
-                              file === activeHtmlPath
-                                ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                                : "text-muted-foreground hover:bg-sidebar-accent/60"
-                            }`}
-                            title={file}
-                          >
-                            {file.split("/").pop()}
-                          </button>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-              {!htmlFiles.length && !scanning && (
-                <p className="px-3 py-2 text-xs text-muted-foreground">
-                  Keine HTML-Dateien gefunden.
-                </p>
-              )}
-            </div>
-
-            <div className="mt-6">
-              <div className="flex items-center justify-between px-2">
-                <p className="label-eyebrow">JSON-Dateien</p>
+                <p className="label-eyebrow">Kapitel · JSON + HTML</p>
                 <span className="text-xs text-muted-foreground">{jsonFiles.length}</span>
               </div>
               <Accordion type="multiple" className="mt-2">
-                {jsonGroups.map((group) => (
-                  <AccordionItem key={group.name} value={group.name} className="border-b-0">
-                    <AccordionTrigger className="rounded-md px-3 py-2 text-sm hover:no-underline">
+                {pairedChapters.groups.map((group) => {
+                  const categoryColor = categoryColors[group.category.toLowerCase()];
+                  const colorStyle = categoryColor
+                    ? ({ "--category-color": categoryColor } as CSSProperties)
+                    : undefined;
+                  return (
+                  <AccordionItem key={group.name} value={group.name} className="border-b-0" style={colorStyle}>
+                    <AccordionTrigger className="rounded-md border-l-[3px] border-l-[var(--category-color,var(--border))] px-3 py-2 text-sm hover:no-underline">
                       <span className="flex min-w-0 items-center gap-2">
-                        <FolderTree className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="size-2.5 shrink-0 rounded-sm bg-[var(--category-color,var(--muted-foreground))]" />
                         <span className="truncate">{group.name}</span>
                       </span>
-                      <span className="mr-2 text-xs text-muted-foreground">{group.files.length}</span>
+                      <span className="mr-2 text-xs text-muted-foreground">
+                        {group.chapters.length}
+                      </span>
                     </AccordionTrigger>
                     <AccordionContent className="pb-1">
-                      <div className="space-y-1 pl-2">
-                        {group.files.map((file) => {
-                          const fileName = file.split("/").pop() ?? file;
+                      <div className="space-y-1.5 pl-2">
+                        {group.chapters.map(({ jsonPath, htmlPaths }) => {
+                          const fileName = jsonPath.split("/").pop() ?? jsonPath;
                           const meta = parseChapterName(fileName);
+                          const active = jsonPath === activePath || htmlPaths.includes(activeHtmlPath ?? "");
                           return (
-                            <Button
-                              key={file}
-                              type="button"
-                              variant="ghost"
-                              onClick={() => openChapter(file)}
-                              className={`grid h-auto w-full grid-cols-[3rem_minmax(0,1fr)] items-center gap-2 px-2 py-1.5 text-left ${
-                                file === activePath ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground"
+                            <div
+                              key={jsonPath}
+                              className={`grid grid-cols-[3rem_minmax(0,1fr)] gap-2 rounded-md border-l-[3px] border-l-[var(--category-color,var(--border))] p-1.5 ${
+                                active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50"
                               }`}
-                              title={file}
                             >
-                              <span className="h-9 w-12 overflow-hidden rounded-sm bg-muted">
-                                {chapterImages[file] ? (
-                                  <img src={chapterImages[file]} alt="" className="h-full w-full object-cover" />
+                              <span className="h-10 w-12 overflow-hidden rounded-sm bg-muted">
+                                {chapterImages[jsonPath] ? (
+                                  <img src={chapterImages[jsonPath]} alt="" className="h-full w-full object-cover" />
                                 ) : (
                                   <span className="grid h-full place-items-center font-mono text-[10px]">
                                     {meta.kapitel !== null ? String(meta.kapitel).padStart(2, "0") : "JSON"}
                                   </span>
                                 )}
                               </span>
-                              <span className="min-w-0 truncate font-mono text-[11px]">{fileName}</span>
-                            </Button>
+                              <div className="min-w-0">
+                                <p className="truncate font-mono text-[11px]" title={jsonPath}>
+                                  {fileName.replace(/\.json$/i, "")}
+                                </p>
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={jsonPath === activePath ? "secondary" : "ghost"}
+                                    className="h-6 gap-1 px-2 text-[10px]"
+                                    onClick={() => openChapter(jsonPath)}
+                                    title={`${fileName} bearbeiten`}
+                                  >
+                                    <Braces className="size-3" /> JSON
+                                  </Button>
+                                  {htmlPaths.map((htmlPath, htmlIndex) => (
+                                    <Button
+                                      key={htmlPath}
+                                      type="button"
+                                      size="sm"
+                                      variant={htmlPath === activeHtmlPath ? "secondary" : "ghost"}
+                                      className="h-6 gap-1 px-2 text-[10px]"
+                                      onClick={() => openHtml(htmlPath)}
+                                      title={htmlPath}
+                                    >
+                                      <Eye className="size-3" /> HTML{htmlPaths.length > 1 ? ` ${htmlIndex + 1}` : ""}
+                                    </Button>
+                                  ))}
+                                  {!htmlPaths.length ? (
+                                    <span className="px-1 py-1 text-[10px] text-muted-foreground">HTML fehlt</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
-                ))}
+                  );
+                })}
               </Accordion>
               {!jsonFiles.length && !scanning ? (
-                <p className="px-3 py-2 text-xs text-muted-foreground">Keine JSON-Dateien gefunden.</p>
+                <p className="px-3 py-2 text-xs text-muted-foreground">Keine Kapitel gefunden.</p>
               ) : null}
             </div>
+
+            {pairedChapters.unmatchedHtml.length ? (
+            <div className="mt-6">
+              <div className="flex items-center justify-between px-2">
+                <p className="label-eyebrow">Weitere HTML-Dateien</p>
+                <span className="text-xs text-muted-foreground">{pairedChapters.unmatchedHtml.length}</span>
+              </div>
+              <div className="mt-2 space-y-1">
+                {pairedChapters.unmatchedHtml.map((file) => (
+                  <Button
+                    key={file}
+                    type="button"
+                    variant="ghost"
+                    onClick={() => openHtml(file)}
+                    className={`h-auto w-full justify-start px-3 py-2 font-mono text-[11px] ${
+                      file === activeHtmlPath ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground"
+                    }`}
+                    title={file}
+                  >
+                    <Eye className="size-3.5 shrink-0" />
+                    <span className="truncate">{file}</span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+            ) : null}
 
             <div className="mt-6">
               <div className="flex items-center justify-between px-2">
