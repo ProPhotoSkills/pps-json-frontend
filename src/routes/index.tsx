@@ -94,10 +94,11 @@ function extractCategoryColors(markup: string, categoryNames: string[]): Record<
   const colors: Record<string, string> = {};
   for (const category of categoryNames) {
     const escaped = category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const match = markup.match(
-      new RegExp(`color\\s*:\\s*(#[0-9a-fA-F]{6})[^>]{0,180}>\\s*${escaped}\\s*<`, "i"),
-    );
-    if (match?.[1]) colors[category.toLowerCase()] = match[1];
+    const matches = [
+      ...markup.matchAll(new RegExp(`color\\s*:\\s*(#[0-9a-fA-F]{6})[\\s\\S]{0,220}?${escaped}`, "gi")),
+    ];
+    const closest = matches.sort((a, b) => a[0].length - b[0].length)[0];
+    if (closest?.[1]) colors[category.toLowerCase()] = closest[1];
   }
   return colors;
 }
