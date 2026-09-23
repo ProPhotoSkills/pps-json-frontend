@@ -36,6 +36,7 @@ import {
   type EditableField,
 } from "@/lib/divi";
 import { rebuildCategory } from "@/lib/rebuild";
+import type { RepoPageAssets } from "@/lib/preview";
 import {
   EMPTY_HEAD_SETTINGS,
   EMPTY_HEAD_VALUES,
@@ -128,6 +129,7 @@ function Redaktion() {
   const [rebuilding, setRebuilding] = useState(false);
   const [chapterImages, setChapterImages] = useState<Record<string, string>>({});
   const [globalMarkups, setGlobalMarkups] = useState<Record<string, string>>({});
+  const [repoPageAssets, setRepoPageAssets] = useState<RepoPageAssets>({ css: [], js: [] });
   const [activeHeaderPath, setActiveHeaderPath] = useState<string | null>(null);
   const [activeFooterPath, setActiveFooterPath] = useState<string | null>(null);
   const [activeHtmlPath, setActiveHtmlPath] = useState<string | null>(null);
@@ -167,6 +169,27 @@ function Redaktion() {
       );
       const result = deriveScan(tree);
       setScan(result);
+
+      const pageAssetPaths = tree
+        .filter((entry) => entry.type === "blob" && /\.(?:css|js)$/i.test(entry.path))
+        .map((entry) => entry.path);
+      const pageAssetEntries = await Promise.all(
+        pageAssetPaths.map(async (path) => {
+          try {
+            const { text } = await fetchFile(config, path);
+            return { path, content: text };
+          } catch {
+            return null;
+          }
+        }),
+      );
+      const loadedPageAssets = pageAssetEntries.filter(
+        (asset): asset is { path: string; content: string } => asset !== null,
+      );
+      setRepoPageAssets({
+        css: loadedPageAssets.filter((asset) => asset.path.toLowerCase().endsWith(".css")),
+        js: loadedPageAssets.filter((asset) => asset.path.toLowerCase().endsWith(".js")),
+      });
       setActiveCategory((current) => current ?? result.categories[0]?.name ?? null);
 
       const chapterPaths = result.categories.flatMap((item) => item.chapters.map((chapter) => chapter.path));
@@ -901,6 +924,7 @@ function Redaktion() {
             headerMarkups={selectedHeaderMarkups}
             footerMarkups={selectedFooterMarkups}
             headValues={effectiveHeadValues(headSettings, activePath)}
+            repoAssets={repoPageAssets}
             fields={fields}
             values={values}
             original={original}

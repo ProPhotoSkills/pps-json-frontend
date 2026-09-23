@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import type { EditableField } from "@/lib/divi";
 import { parseChapterName } from "@/lib/divi";
-import { renderFullPageHtml } from "@/lib/preview";
+import { renderFullPageHtml, type RepoPageAssets } from "@/lib/preview";
 import type { HeadValues } from "@/lib/headSettings";
 import { BlockEditor } from "./BlockEditor";
 
@@ -17,6 +17,7 @@ type Props = {
   headerMarkups: string[];
   footerMarkups: string[];
   headValues: HeadValues;
+  repoAssets: RepoPageAssets;
   fields: EditableField[];
   values: Record<string, string>;
   original: Record<string, string>;
@@ -43,6 +44,7 @@ export function ChapterEditor({
   headerMarkups,
   footerMarkups,
   headValues,
+  repoAssets,
   fields,
   values,
   original,
@@ -58,29 +60,32 @@ export function ChapterEditor({
   const [tab, setTab] = useState<"preview" | "blocks" | "fields">("preview");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const renderPreview = () =>
-    markup ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues) : "";
+    markup ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets) : "";
   const [previewHtml, setPreviewHtml] = useState(renderPreview);
 
   useEffect(() => {
-    setPreviewHtml(renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues));
+    setPreviewHtml(renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets));
     // Änderungen aus der Vorschau dürfen das iframe beim Tippen nicht neu laden.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, markup, headerMarkups, footerMarkups, headValues]);
+  }, [path, markup, headerMarkups, footerMarkups, headValues, repoAssets]);
+
+  useEffect(() => {
+    const receiveEdit = (event: MessageEvent<unknown>) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (!event.data || typeof event.data !== "object") return;
+      const message = event.data as { type?: unknown; id?: unknown; value?: unknown };
+      if (message.type !== "pps-json-field-change") return;
+      if (typeof message.id !== "string" || typeof message.value !== "string") return;
+      if (!fields.some((field) => field.id === message.id)) return;
+      onChange(message.id, message.value);
+    };
+    window.addEventListener("message", receiveEdit);
+    return () => window.removeEventListener("message", receiveEdit);
+  }, [fields, onChange]);
 
   const openTab = (nextTab: "preview" | "blocks" | "fields") => {
     if (nextTab === "preview") setPreviewHtml(renderPreview());
     setTab(nextTab);
-  };
-
-  const connectInlineEditor = () => {
-    const doc = iframeRef.current?.contentDocument;
-    if (!doc) return;
-    doc.querySelectorAll<HTMLElement>("[data-json-field]").forEach((element) => {
-      element.addEventListener("input", () => {
-        const id = element.dataset["jsonField"];
-        if (id) onChange(id, element.innerHTML);
-      });
-    });
   };
 
   return (
@@ -103,7 +108,7 @@ export function ChapterEditor({
             variant="outline"
             onClick={() => {
               onReset();
-              setPreviewHtml(renderFullPageHtml(markup, original, headerMarkups, footerMarkups, headValues));
+              setPreviewHtml(renderFullPageHtml(markup, original, headerMarkups, footerMarkups, headValues, repoAssets));
             }}
             disabled={!dirty || saving}
           >
@@ -154,8 +159,7 @@ export function ChapterEditor({
             ref={iframeRef}
             title="Kapitelvorschau"
             srcDoc={previewHtml}
-            sandbox="allow-same-origin"
-            onLoad={connectInlineEditor}
+            sandbox="allow-scripts"
             className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />
         </div>
