@@ -32,7 +32,8 @@ async function request<T>(cfg: RepoConfig, path: string, init?: RequestInit): Pr
     ...init,
     headers: {
       Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${cfg.token}`,
+      // Öffentliche Repos funktionieren auch ohne Token (nur Lesen).
+      ...(cfg.token ? { Authorization: `Bearer ${cfg.token}` } : {}),
       "X-GitHub-Api-Version": "2022-11-28",
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
       ...(init?.headers ?? {}),

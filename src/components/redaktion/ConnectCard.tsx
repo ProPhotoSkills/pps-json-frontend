@@ -56,10 +56,10 @@ export function ConnectCard({ initial, busy, onConnect }: Props) {
               placeholder="ghp_… oder github_pat_…"
               value={token}
               onChange={(e) => setToken(e.target.value)}
-              required
             />
             <p className="text-xs text-muted-foreground">
-              Benötigt Lese- und Schreibrechte auf den Repository-Inhalt.
+              Benötigt Lese- und Schreibrechte auf den Repository-Inhalt. Bei öffentlichen
+              Repositories kann das Feld zum reinen Ansehen leer bleiben.
             </p>
           </div>
           <Button type="submit" className="w-full" disabled={busy}>

@@ -239,7 +239,7 @@ export function ChapterEditor({
               ref={iframeRef}
               title="Kapitelvorschau"
               srcDoc={previewHtml}
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-same-origin"
               className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
             />
           </div>
