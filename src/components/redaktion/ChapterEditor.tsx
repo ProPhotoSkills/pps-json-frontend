@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,12 +56,32 @@ export function ChapterEditor({
   const meta = parseChapterName(fileName);
   const kindLabel = documentKind === "header" ? "Header" : documentKind === "footer" ? "Footer" : "Kapitel";
   const [tab, setTab] = useState<"preview" | "blocks" | "fields">("preview");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const renderPreview = () =>
+    markup ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues) : "";
+  const [previewHtml, setPreviewHtml] = useState(renderPreview);
 
+  useEffect(() => {
+    setPreviewHtml(renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues));
+    // Änderungen aus der Vorschau dürfen das iframe beim Tippen nicht neu laden.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, markup, headerMarkups, footerMarkups, headValues]);
 
-  const previewHtml = useMemo(() => {
-    if (!markup) return "";
-    return renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues);
-  }, [markup, values, headerMarkups, footerMarkups, headValues]);
+  const openTab = (nextTab: "preview" | "blocks" | "fields") => {
+    if (nextTab === "preview") setPreviewHtml(renderPreview());
+    setTab(nextTab);
+  };
+
+  const connectInlineEditor = () => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return;
+    doc.querySelectorAll<HTMLElement>("[data-json-field]").forEach((element) => {
+      element.addEventListener("input", () => {
+        const id = element.dataset.jsonField;
+        if (id) onChange(id, element.innerHTML);
+      });
+    });
+  };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
@@ -92,17 +112,17 @@ export function ChapterEditor({
         <Button
           type="button"
           variant="ghost"
-          onClick={() => setTab("preview")}
+          onClick={() => openTab("preview")}
           className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "preview" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
         >
-          HTML-Vorschau
+          Seite bearbeiten
         </Button>
         <Button
           type="button"
           variant="ghost"
-          onClick={() => setTab("blocks")}
+          onClick={() => openTab("blocks")}
           className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "blocks" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
@@ -112,7 +132,7 @@ export function ChapterEditor({
         <Button
           type="button"
           variant="ghost"
-          onClick={() => setTab("fields")}
+          onClick={() => openTab("fields")}
           className={`h-auto rounded-md px-4 py-1.5 text-sm transition-colors ${
             tab === "fields" ? "bg-background font-medium shadow-sm" : "text-muted-foreground"
           }`}
@@ -124,9 +144,11 @@ export function ChapterEditor({
       {tab === "preview" ? (
         <div className="mt-6 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
           <iframe
+            ref={iframeRef}
             title="Kapitelvorschau"
             srcDoc={previewHtml}
-            sandbox=""
+            sandbox="allow-same-origin"
+            onLoad={connectInlineEditor}
             className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />
         </div>

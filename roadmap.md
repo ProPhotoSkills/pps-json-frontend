@@ -6,3 +6,4 @@
 - [x] Bestehende Kopfzeilen-Angaben aus allen HTML-Dateien einlesen und zur Korrektur anzeigen.
 - [x] JSON-Dateien nach ihren Repo-Ordnern darstellen; Header und Footer separat behandeln.
 - [x] Zusammengehörige Kapitel-JSONs und HTML-Seiten gemeinsam und mit den Footer-Kategorienfarben darstellen.
+- [x] Texte aus Kapitel-JSONs direkt in der vollständigen Seitenansicht anklickbar und bearbeitbar machen.
