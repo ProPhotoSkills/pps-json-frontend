@@ -299,7 +299,7 @@ function Redaktion() {
   const handleConnect = async (config: RepoConfig) => {
     setConnecting(true);
     try {
-      await verifyToken(config);
+      if (config.token) await verifyToken(config);
       const result = await runScan(config);
       setCfg(config);
       const firstChapterPath = result.categories.flatMap((item) => item.chapters)[0]?.path;
