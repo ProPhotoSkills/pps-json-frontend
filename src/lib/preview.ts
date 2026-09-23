@@ -217,6 +217,7 @@ ${footer ? `<footer class="pps-site-footer">${footer}</footer>` : ""}
 <div id="google_translate_element" style="display:none;"></div>
 ${renderPpsAssetScriptTags()}
 ${repoPageAssets.scripts}
+<script src="/html2canvas.min.js"></script>
 <script>
   document.querySelectorAll('[data-json-field]').forEach(function (element) {
     element.addEventListener('input', function () {
@@ -226,6 +227,52 @@ ${repoPageAssets.scripts}
         value: element.innerHTML
       }, '*');
     });
+  });
+
+  async function captureCompletePage() {
+    window.parent.postMessage({ type: 'pps-page-capture-start' }, '*');
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      var images = Array.prototype.slice.call(document.images);
+      await Promise.all(images.map(function (image) {
+        if (image.complete) return Promise.resolve();
+        return new Promise(function (resolve) {
+          image.addEventListener('load', resolve, { once: true });
+          image.addEventListener('error', resolve, { once: true });
+        });
+      }));
+      await new Promise(function (resolve) { window.setTimeout(resolve, 700); });
+      if (typeof window.html2canvas !== 'function') throw new Error('Aufnahmefunktion nicht geladen.');
+      var page = document.documentElement;
+      var pageHeight = Math.max(page.scrollHeight, document.body.scrollHeight);
+      var scale = Math.min(1, 12000 / Math.max(pageHeight, 1));
+      var canvas = await window.html2canvas(document.body, {
+        backgroundColor: '#ffffff',
+        height: pageHeight,
+        imageTimeout: 5000,
+        logging: false,
+        scale: scale,
+        useCORS: true,
+        windowHeight: pageHeight,
+        windowWidth: Math.max(page.scrollWidth, document.body.scrollWidth)
+      });
+      window.parent.postMessage({
+        type: 'pps-page-capture-ready',
+        image: canvas.toDataURL('image/jpeg', 0.86),
+        width: canvas.width,
+        height: canvas.height
+      }, '*');
+    } catch (error) {
+      window.parent.postMessage({
+        type: 'pps-page-capture-error',
+        message: error instanceof Error ? error.message : 'Die Seitenaufnahme konnte nicht erstellt werden.'
+      }, '*');
+    }
+  }
+
+  window.addEventListener('load', captureCompletePage, { once: true });
+  window.addEventListener('message', function (event) {
+    if (event.data && event.data.type === 'pps-page-capture-request') captureCompletePage();
   });
 </script>
 </div></div></body></html>`;

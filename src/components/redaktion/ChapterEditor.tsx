@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Camera, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,12 +60,18 @@ export function ChapterEditor({
   const kindLabel = documentKind === "header" ? "Header" : documentKind === "footer" ? "Footer" : "Kapitel";
   const [tab, setTab] = useState<"preview" | "blocks" | "fields">("preview");
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [capture, setCapture] = useState<{ image: string; width: number; height: number } | null>(null);
+  const [captureState, setCaptureState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [captureError, setCaptureError] = useState("");
   const renderPreview = () =>
     markup ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets) : "";
   const [previewHtml, setPreviewHtml] = useState(renderPreview);
 
   useEffect(() => {
     setPreviewHtml(renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets));
+    setCapture(null);
+    setCaptureState("loading");
+    setCaptureError("");
     // Änderungen aus der Vorschau dürfen das iframe beim Tippen nicht neu laden.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, markup, headerMarkups, footerMarkups, headValues, repoAssets]);
@@ -73,11 +80,40 @@ export function ChapterEditor({
     const receiveEdit = (event: MessageEvent<unknown>) => {
       if (event.source !== iframeRef.current?.contentWindow) return;
       if (!event.data || typeof event.data !== "object") return;
-      const message = event.data as { type?: unknown; id?: unknown; value?: unknown };
-      if (message.type !== "pps-json-field-change") return;
-      if (typeof message.id !== "string" || typeof message.value !== "string") return;
-      if (!fields.some((field) => field.id === message.id)) return;
-      onChange(message.id, message.value);
+      const message = event.data as {
+        type?: unknown;
+        id?: unknown;
+        value?: unknown;
+        image?: unknown;
+        width?: unknown;
+        height?: unknown;
+        message?: unknown;
+      };
+      if (message.type === "pps-json-field-change") {
+        if (typeof message.id !== "string" || typeof message.value !== "string") return;
+        if (!fields.some((field) => field.id === message.id)) return;
+        onChange(message.id, message.value);
+        return;
+      }
+      if (message.type === "pps-page-capture-start") {
+        setCaptureState("loading");
+        setCaptureError("");
+        return;
+      }
+      if (
+        message.type === "pps-page-capture-ready" &&
+        typeof message.image === "string" &&
+        typeof message.width === "number" &&
+        typeof message.height === "number"
+      ) {
+        setCapture({ image: message.image, width: message.width, height: message.height });
+        setCaptureState("ready");
+        return;
+      }
+      if (message.type === "pps-page-capture-error") {
+        setCaptureState("error");
+        setCaptureError(typeof message.message === "string" ? message.message : "Die Seitenaufnahme konnte nicht erstellt werden.");
+      }
     };
     window.addEventListener("message", receiveEdit);
     return () => window.removeEventListener("message", receiveEdit);
@@ -86,6 +122,12 @@ export function ChapterEditor({
   const openTab = (nextTab: "preview" | "blocks" | "fields") => {
     if (nextTab === "preview") setPreviewHtml(renderPreview());
     setTab(nextTab);
+  };
+
+  const refreshCapture = () => {
+    setCaptureState("loading");
+    setCaptureError("");
+    iframeRef.current?.contentWindow?.postMessage({ type: "pps-page-capture-request" }, "*");
   };
 
   return (
@@ -154,14 +196,53 @@ export function ChapterEditor({
       </div>
 
       {tab === "preview" ? (
-        <div className="mt-6 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
-          <iframe
-            ref={iframeRef}
-            title="Kapitelvorschau"
-            srcDoc={previewHtml}
-            sandbox="allow-scripts"
-            className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
-          />
+        <div className="mt-6 space-y-4">
+          <section className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <Camera className="size-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Vollständige Seitenaufnahme</p>
+                  <p className="truncate text-xs text-muted-foreground">Mit CSS, JavaScript, Header und Footer</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={refreshCapture}
+                disabled={captureState === "loading"}
+                title="Seitenaufnahme aktualisieren"
+              >
+                <RefreshCw className={`size-4 ${captureState === "loading" ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+            {capture ? (
+              <div className="max-h-[38rem] overflow-auto bg-muted/20 p-3">
+                <img
+                  src={capture.image}
+                  alt={`Vollständige Aufnahme von ${fileName}`}
+                  width={capture.width}
+                  height={capture.height}
+                  className="h-auto w-full bg-background"
+                />
+              </div>
+            ) : (
+              <div className="grid min-h-32 place-items-center px-6 py-8 text-center text-sm text-muted-foreground">
+                {captureState === "error" ? captureError : "Die vollständige Seite wird geladen und aufgenommen…"}
+              </div>
+            )}
+          </section>
+
+          <div className="overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+            <iframe
+              ref={iframeRef}
+              title="Kapitelvorschau"
+              srcDoc={previewHtml}
+              sandbox="allow-scripts"
+              className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
+            />
+          </div>
         </div>
       ) : tab === "blocks" ? (
         <BlockEditor fields={fields} values={values} original={original} onChange={onChange} />
