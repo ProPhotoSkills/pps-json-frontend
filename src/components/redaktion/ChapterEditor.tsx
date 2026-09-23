@@ -69,20 +69,23 @@ export function ChapterEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, markup, headerMarkups, footerMarkups, headValues, repoAssets]);
 
+  useEffect(() => {
+    const receiveEdit = (event: MessageEvent<unknown>) => {
+      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (!event.data || typeof event.data !== "object") return;
+      const message = event.data as { type?: unknown; id?: unknown; value?: unknown };
+      if (message.type !== "pps-json-field-change") return;
+      if (typeof message.id !== "string" || typeof message.value !== "string") return;
+      if (!fields.some((field) => field.id === message.id)) return;
+      onChange(message.id, message.value);
+    };
+    window.addEventListener("message", receiveEdit);
+    return () => window.removeEventListener("message", receiveEdit);
+  }, [fields, onChange]);
+
   const openTab = (nextTab: "preview" | "blocks" | "fields") => {
     if (nextTab === "preview") setPreviewHtml(renderPreview());
     setTab(nextTab);
-  };
-
-  const connectInlineEditor = () => {
-    const doc = iframeRef.current?.contentDocument;
-    if (!doc) return;
-    doc.querySelectorAll<HTMLElement>("[data-json-field]").forEach((element) => {
-      element.addEventListener("input", () => {
-        const id = element.dataset["jsonField"];
-        if (id) onChange(id, element.innerHTML);
-      });
-    });
   };
 
   return (
@@ -156,8 +159,7 @@ export function ChapterEditor({
             ref={iframeRef}
             title="Kapitelvorschau"
             srcDoc={previewHtml}
-            sandbox="allow-same-origin allow-scripts"
-            onLoad={connectInlineEditor}
+            sandbox="allow-scripts"
             className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />
         </div>

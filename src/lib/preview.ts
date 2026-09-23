@@ -217,5 +217,16 @@ ${footer ? `<footer class="pps-site-footer">${footer}</footer>` : ""}
 <div id="google_translate_element" style="display:none;"></div>
 ${renderPpsAssetScriptTags()}
 ${repoPageAssets.scripts}
+<script>
+  document.querySelectorAll('[data-json-field]').forEach(function (element) {
+    element.addEventListener('input', function () {
+      window.parent.postMessage({
+        type: 'pps-json-field-change',
+        id: element.getAttribute('data-json-field'),
+        value: element.innerHTML
+      }, '*');
+    });
+  });
+</script>
 </div></div></body></html>`;
 }
