@@ -7,3 +7,4 @@
 - [x] JSON-Dateien nach ihren Repo-Ordnern darstellen; Header und Footer separat behandeln.
 - [x] Zusammengehörige Kapitel-JSONs und HTML-Seiten gemeinsam und mit den Footer-Kategorienfarben darstellen.
 - [x] Texte aus Kapitel-JSONs direkt in der vollständigen Seitenansicht anklickbar und bearbeitbar machen.
+- [x] CSS- und JavaScript-Dateien aus dem Repo in die vollständige JSON-Vorschau mit Header und Footer einbinden.

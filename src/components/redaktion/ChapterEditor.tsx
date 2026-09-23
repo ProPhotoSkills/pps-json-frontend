@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import type { EditableField } from "@/lib/divi";
 import { parseChapterName } from "@/lib/divi";
-import { renderFullPageHtml } from "@/lib/preview";
+import { renderFullPageHtml, type RepoPageAssets } from "@/lib/preview";
 import type { HeadValues } from "@/lib/headSettings";
 import { BlockEditor } from "./BlockEditor";
 
@@ -17,6 +17,7 @@ type Props = {
   headerMarkups: string[];
   footerMarkups: string[];
   headValues: HeadValues;
+  repoAssets: RepoPageAssets;
   fields: EditableField[];
   values: Record<string, string>;
   original: Record<string, string>;
@@ -43,6 +44,7 @@ export function ChapterEditor({
   headerMarkups,
   footerMarkups,
   headValues,
+  repoAssets,
   fields,
   values,
   original,
@@ -58,14 +60,14 @@ export function ChapterEditor({
   const [tab, setTab] = useState<"preview" | "blocks" | "fields">("preview");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const renderPreview = () =>
-    markup ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues) : "";
+    markup ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets) : "";
   const [previewHtml, setPreviewHtml] = useState(renderPreview);
 
   useEffect(() => {
-    setPreviewHtml(renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues));
+    setPreviewHtml(renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets));
     // Änderungen aus der Vorschau dürfen das iframe beim Tippen nicht neu laden.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, markup, headerMarkups, footerMarkups, headValues]);
+  }, [path, markup, headerMarkups, footerMarkups, headValues, repoAssets]);
 
   const openTab = (nextTab: "preview" | "blocks" | "fields") => {
     if (nextTab === "preview") setPreviewHtml(renderPreview());
@@ -103,7 +105,7 @@ export function ChapterEditor({
             variant="outline"
             onClick={() => {
               onReset();
-              setPreviewHtml(renderFullPageHtml(markup, original, headerMarkups, footerMarkups, headValues));
+              setPreviewHtml(renderFullPageHtml(markup, original, headerMarkups, footerMarkups, headValues, repoAssets));
             }}
             disabled={!dirty || saving}
           >
@@ -154,7 +156,7 @@ export function ChapterEditor({
             ref={iframeRef}
             title="Kapitelvorschau"
             srcDoc={previewHtml}
-            sandbox="allow-same-origin"
+            sandbox="allow-same-origin allow-scripts"
             onLoad={connectInlineEditor}
             className="h-[calc(100vh-13rem)] min-h-[680px] w-full border-0 bg-card"
           />

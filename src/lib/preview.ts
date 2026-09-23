@@ -8,6 +8,13 @@ import { extractFields, type EditableField } from "./divi";
 import { renderPpsAssetHeadTags, renderPpsAssetScriptTags } from "./siteAssets";
 import { renderManagedHead, type HeadValues } from "./headSettings";
 
+export type RepoPageAssets = {
+  css: { path: string; content: string }[];
+  js: { path: string; content: string }[];
+};
+
+const EMPTY_REPO_ASSETS: RepoPageAssets = { css: [], js: [] };
+
 function esc(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -107,6 +114,16 @@ function renderMarkup(markup: string, values: Record<string, string>, editable =
     .join("\n");
 }
 
+function renderRepoPageAssets(assets: RepoPageAssets): { head: string; scripts: string } {
+  const head = assets.css
+    .map(({ path, content }) => `<style data-repo-file="${esc(path)}">\n${content.replace(/<\/style/gi, "<\\/style")}\n</style>`)
+    .join("\n");
+  const scripts = assets.js
+    .map(({ path, content }) => `<script data-repo-file="${esc(path)}">\n${content.replace(/<\/script/gi, "<\\/script")}\n</script>`)
+    .join("\n");
+  return { head, scripts };
+}
+
 /** Ergänzt eine bestehende HTML-Datei für die RDS-Vorschau um PPS-CSS und den gewählten Footer. */
 export function renderHtmlFilePreview(
   html: string,
@@ -154,15 +171,18 @@ export function renderFullPageHtml(
   headerMarkups: string[] = [],
   footerMarkups: string[] = [],
   headValues?: HeadValues,
+  repoAssets: RepoPageAssets = EMPTY_REPO_ASSETS,
 ): string {
   const header = headerMarkups.map((part) => renderMarkup(part, {})).join("\n");
   const body = renderMarkup(markup, values, true);
   const footer = footerMarkups.map((part) => renderMarkup(part, {})).join("\n");
+  const repoPageAssets = renderRepoPageAssets(repoAssets);
 
   return `<!DOCTYPE html>
 <html lang="de"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 ${renderPpsAssetHeadTags()}
+${repoPageAssets.head}
 ${headValues ? renderManagedHead(headValues, { includeHeadText: true }) : ""}
 <style>
   :root { color-scheme: light; }
@@ -196,5 +216,6 @@ ${header ? `<header class="pps-site-header">${header}</header>` : ""}
 ${footer ? `<footer class="pps-site-footer">${footer}</footer>` : ""}
 <div id="google_translate_element" style="display:none;"></div>
 ${renderPpsAssetScriptTags()}
+${repoPageAssets.scripts}
 </div></div></body></html>`;
 }
