@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,7 +77,7 @@ export function ChapterEditor({
     if (!doc) return;
     doc.querySelectorAll<HTMLElement>("[data-json-field]").forEach((element) => {
       element.addEventListener("input", () => {
-        const id = element.dataset.jsonField;
+        const id = element.dataset["jsonField"];
         if (id) onChange(id, element.innerHTML);
       });
     });
@@ -99,7 +99,14 @@ export function ChapterEditor({
         </div>
         <div className="flex items-center gap-2">
           {dirty && <Badge variant="secondary">Ungespeichert</Badge>}
-          <Button variant="outline" onClick={onReset} disabled={!dirty || saving}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              onReset();
+              setPreviewHtml(renderFullPageHtml(markup, original, headerMarkups, footerMarkups, headValues));
+            }}
+            disabled={!dirty || saving}
+          >
             Verwerfen
           </Button>
           <Button onClick={onSave} disabled={!dirty || saving}>
