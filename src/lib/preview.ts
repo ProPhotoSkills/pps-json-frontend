@@ -47,7 +47,12 @@ function groupBlocks(fields: EditableField[]): Block[] {
   return [...map.values()].sort((a, b) => a.index - b.index);
 }
 
-function renderBlock(block: Block, values: Record<string, string>): string {
+function editableAttributes(field: EditableField, editable: boolean): string {
+  if (!editable || (field.kind !== "heading" && field.kind !== "text")) return "";
+  return ` contenteditable="true" spellcheck="true" data-json-field="${esc(field.id)}" title="Zum Bearbeiten anklicken"`;
+}
+
+function renderBlock(block: Block, values: Record<string, string>, editable = false): string {
   const get = (pred: (f: EditableField) => boolean) => {
     const f = block.fields.find(pred);
     return f ? clean(values[f.id] ?? f.value) : "";
@@ -75,13 +80,15 @@ function renderBlock(block: Block, values: Record<string, string>): string {
         parts.push(`<figure><img src="${esc(value)}" alt="" loading="lazy" /></figure>`);
       }
     } else if (field.kind === "heading") {
-      parts.push(isHtml(value) ? `<div class="rich">${value}</div>` : `<h2>${esc(value)}</h2>`);
+      const attrs = editableAttributes(field, editable);
+      parts.push(isHtml(value) ? `<div class="rich"${attrs}>${value}</div>` : `<h2${attrs}>${esc(value)}</h2>`);
     } else if (field.kind === "link") {
       parts.push(`<p class="link"><a href="${esc(value)}">${esc(value)}</a></p>`);
     } else if (key === "label" || key === "buttontext") {
       parts.push(`<p><span class="btn">${esc(value)}</span></p>`);
     } else {
-      parts.push(isHtml(value) ? `<div class="rich">${value}</div>` : `<p>${esc(value)}</p>`);
+      const attrs = editableAttributes(field, editable);
+      parts.push(isHtml(value) ? `<div class="rich"${attrs}>${value}</div>` : `<p${attrs}>${esc(value)}</p>`);
     }
   }
 
@@ -94,9 +101,9 @@ function renderBlock(block: Block, values: Record<string, string>): string {
   return `<section class="content-block et_pb_module et_pb_text${role}"><div class="et_pb_text_inner">${parts.join("\n")}</div></section>`;
 }
 
-function renderMarkup(markup: string, values: Record<string, string>): string {
+function renderMarkup(markup: string, values: Record<string, string>, editable = false): string {
   return groupBlocks(extractFields(markup))
-    .map((block) => renderBlock(block, values))
+    .map((block) => renderBlock(block, values, editable))
     .join("\n");
 }
 
@@ -149,7 +156,7 @@ export function renderFullPageHtml(
   headValues?: HeadValues,
 ): string {
   const header = headerMarkups.map((part) => renderMarkup(part, {})).join("\n");
-  const body = renderMarkup(markup, values);
+  const body = renderMarkup(markup, values, true);
   const footer = footerMarkups.map((part) => renderMarkup(part, {})).join("\n");
 
   return `<!DOCTYPE html>
@@ -177,6 +184,9 @@ ${headValues ? renderManagedHead(headValues, { includeHeadText: true }) : ""}
   .rich img { margin:12px 0; max-width:100%; height:auto; }
   .btn { display:inline-block; background:#1f1f1f; color:#fff; border-radius:4px;
     padding:10px 24px; font-size:14px; text-decoration:none; }
+  [data-json-field] { cursor:text; border-radius:3px; outline:1px dashed transparent; outline-offset:5px; transition:outline-color .15s, background-color .15s; }
+  [data-json-field]:hover { outline-color:#a08000; }
+  [data-json-field]:focus { outline:2px solid #a08000; background:#fffbea; }
   .empty { color:#8b8175; }
   @media (max-width:640px) { .content-block { padding:24px 18px; } }
 </style></head>
