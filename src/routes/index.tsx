@@ -269,12 +269,41 @@ function Redaktion() {
     }
   }, []);
 
+  const loadChapter = async (config: RepoConfig, path: string) => {
+    setActiveHtmlPath(null);
+    setActiveTextPath(null);
+    setEditingHead(false);
+    setHtmlContent("");
+    setActivePath(path);
+    setLoadingChapter(true);
+    try {
+      const { text } = await fetchFile(config, path);
+      const parsed = JSON.parse(text) as ChapterFile;
+      const markup = getChapterMarkup(parsed);
+      const extracted = markup ? extractFields(markup.markup) : [];
+      const initial: Record<string, string> = {};
+      extracted.forEach((field) => (initial[field.id] = field.value));
+      setChapterFile(parsed);
+      setFields(extracted);
+      setValues(initial);
+      setOriginal(initial);
+    } catch (err) {
+      toast.error(describe(err));
+      setChapterFile(null);
+      setFields([]);
+    } finally {
+      setLoadingChapter(false);
+    }
+  };
+
   const handleConnect = async (config: RepoConfig) => {
     setConnecting(true);
     try {
       await verifyToken(config);
-      await runScan(config);
+      const result = await runScan(config);
       setCfg(config);
+      const firstChapterPath = result.categories.flatMap((item) => item.chapters)[0]?.path;
+      if (firstChapterPath) await loadChapter(config, firstChapterPath);
       localStorage.setItem(
         SETTINGS_KEY,
         JSON.stringify({ owner: config.owner, repo: config.repo, branch: config.branch }),
@@ -447,30 +476,7 @@ function Redaktion() {
 
   const openChapter = async (path: string) => {
     if (!cfg) return;
-    setActiveHtmlPath(null);
-    setActiveTextPath(null);
-    setEditingHead(false);
-    setHtmlContent("");
-    setActivePath(path);
-    setLoadingChapter(true);
-    try {
-      const { text } = await fetchFile(cfg, path);
-      const parsed = JSON.parse(text) as ChapterFile;
-      const markup = getChapterMarkup(parsed);
-      const extracted = markup ? extractFields(markup.markup) : [];
-      const initial: Record<string, string> = {};
-      extracted.forEach((f) => (initial[f.id] = f.value));
-      setChapterFile(parsed);
-      setFields(extracted);
-      setValues(initial);
-      setOriginal(initial);
-    } catch (err) {
-      toast.error(describe(err));
-      setChapterFile(null);
-      setFields([]);
-    } finally {
-      setLoadingChapter(false);
-    }
+    await loadChapter(cfg, path);
   };
 
   const handleSaveHead = async (
