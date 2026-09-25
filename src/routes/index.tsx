@@ -443,6 +443,10 @@ function Redaktion() {
   );
   const headTargetFiles = useMemo(() => [...htmlFiles, ...jsonFiles], [htmlFiles, jsonFiles]);
   const activeHeadValues = effectiveHeadValues(headSettings, activeHtmlPath);
+  const activeChapterHeadValues = useMemo(
+    () => effectiveHeadValues(headSettings, activePath),
+    [headSettings, activePath],
+  );
   const activeDocumentKind = activePath?.split("/")[0]?.toLowerCase() === "header"
     ? "header"
     : activePath?.split("/")[0]?.toLowerCase() === "footer"
@@ -945,7 +949,7 @@ function Redaktion() {
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
             headerMarkups={selectedHeaderMarkups}
             footerMarkups={selectedFooterMarkups}
-            headValues={effectiveHeadValues(headSettings, activePath)}
+            headValues={activeChapterHeadValues}
             repoAssets={repoPageAssets}
             htmlTemplate={chapterHtmlTemplate}
             fields={fields}
