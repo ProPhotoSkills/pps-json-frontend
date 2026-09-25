@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { toast } from "sonner";
 import { Braces, Check, Code2, Eye, FolderTree, Hammer, LogOut, Pencil, RefreshCw } from "lucide-react";
 
@@ -130,6 +130,8 @@ function Redaktion() {
   const [chapterImages, setChapterImages] = useState<Record<string, string>>({});
   const [globalMarkups, setGlobalMarkups] = useState<Record<string, string>>({});
   const [repoPageAssets, setRepoPageAssets] = useState<RepoPageAssets>({ css: [], js: [] });
+  const htmlFilesRef = useRef<string[]>([]);
+  const [chapterHtmlTemplate, setChapterHtmlTemplate] = useState("");
   const [activeHeaderPath, setActiveHeaderPath] = useState<string | null>(null);
   const [activeFooterPath, setActiveFooterPath] = useState<string | null>(null);
   const [activeHtmlPath, setActiveHtmlPath] = useState<string | null>(null);
@@ -245,6 +247,7 @@ function Redaktion() {
       const repoHtmlFiles = tree
         .filter((entry) => entry.type === "blob" && entry.path.toLowerCase().endsWith(".html"))
         .map((entry) => entry.path);
+      htmlFilesRef.current = repoHtmlFiles;
       const extractedEntries = await Promise.all(
         repoHtmlFiles.map(async (path) => {
           try {
@@ -274,6 +277,7 @@ function Redaktion() {
     setActiveTextPath(null);
     setEditingHead(false);
     setHtmlContent("");
+    setChapterHtmlTemplate("");
     setActivePath(path);
     setLoadingChapter(true);
     try {
@@ -287,6 +291,18 @@ function Redaktion() {
       setFields(extracted);
       setValues(initial);
       setOriginal(initial);
+      const chapterKey = normalizedChapterKey(path);
+      const matchingHtmlPath = chapterKey
+        ? htmlFilesRef.current.find((htmlPath) => htmlChapterKey(htmlPath) === chapterKey)
+        : undefined;
+      if (matchingHtmlPath) {
+        try {
+          const { text: matchingHtml } = await fetchFile(config, matchingHtmlPath);
+          setChapterHtmlTemplate(matchingHtml);
+        } catch {
+          setChapterHtmlTemplate("");
+        }
+      }
     } catch (err) {
       toast.error(describe(err));
       setChapterFile(null);
@@ -427,6 +443,10 @@ function Redaktion() {
   );
   const headTargetFiles = useMemo(() => [...htmlFiles, ...jsonFiles], [htmlFiles, jsonFiles]);
   const activeHeadValues = effectiveHeadValues(headSettings, activeHtmlPath);
+  const activeChapterHeadValues = useMemo(
+    () => effectiveHeadValues(headSettings, activePath),
+    [headSettings, activePath],
+  );
   const activeDocumentKind = activePath?.split("/")[0]?.toLowerCase() === "header"
     ? "header"
     : activePath?.split("/")[0]?.toLowerCase() === "footer"
@@ -929,8 +949,9 @@ function Redaktion() {
             markup={getChapterMarkup(chapterFile)?.markup ?? ""}
             headerMarkups={selectedHeaderMarkups}
             footerMarkups={selectedFooterMarkups}
-            headValues={effectiveHeadValues(headSettings, activePath)}
+            headValues={activeChapterHeadValues}
             repoAssets={repoPageAssets}
+            htmlTemplate={chapterHtmlTemplate}
             fields={fields}
             values={values}
             original={original}
