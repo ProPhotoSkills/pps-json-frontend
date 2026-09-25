@@ -156,6 +156,74 @@ export function renderHtmlFilePreview(
   return preview;
 }
 
+/**
+ * Nutzt die fertig gerenderte Kapitel-HTML als Vorlage für eine JSON-Datei.
+ * Dadurch sieht die JSON-Seite genauso aus wie ihr HTML-Pendant; die Werte aus
+ * der JSON werden in der Vorlage gefunden und bleiben direkt bearbeitbar.
+ */
+export function renderJsonFilePreview(
+  html: string,
+  fields: EditableField[],
+  values: Record<string, string>,
+  footerMarkups: string[] = [],
+  headValues?: HeadValues,
+  repoAssets: RepoPageAssets = EMPTY_REPO_ASSETS,
+): string {
+  let preview = renderHtmlFilePreview(html, footerMarkups, headValues);
+  const assets = renderRepoPageAssets(repoAssets);
+  const editableFields = fields
+    .filter((field) => field.kind === "heading" || field.kind === "text")
+    .map((field) => ({
+      id: field.id,
+      original: field.value,
+      value: values[field.id] ?? field.value,
+    }));
+  const fieldData = JSON.stringify(editableFields).replace(/<\/script/gi, "<\\/script");
+  const bridge = `<script>
+  (function () {
+    var fields = ${fieldData};
+    function plain(value) {
+      var holder = document.createElement('div');
+      holder.innerHTML = value || '';
+      return (holder.textContent || '').replace(/\\s+/g, ' ').trim();
+    }
+    var candidates = Array.prototype.slice.call(document.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,a,span,div'));
+    fields.forEach(function (field) {
+      var originalText = plain(field.original);
+      if (!originalText) return;
+      var matches = candidates.filter(function (element) {
+        return !element.closest('[data-json-field]') && plain(element.innerHTML) === originalText;
+      }).sort(function (a, b) {
+        return a.children.length - b.children.length || a.innerHTML.length - b.innerHTML.length;
+      });
+      var element = matches[0];
+      if (!element) return;
+      element.innerHTML = field.value;
+      element.setAttribute('contenteditable', 'true');
+      element.setAttribute('spellcheck', 'true');
+      element.setAttribute('data-json-field', field.id);
+      element.setAttribute('title', 'Zum Bearbeiten anklicken');
+      element.addEventListener('input', function () {
+        window.parent.postMessage({ type: 'pps-json-field-change', id: field.id, value: element.innerHTML }, '*');
+      });
+    });
+    document.querySelectorAll('[data-json-field]').forEach(function (element) {
+      element.style.cursor = 'text';
+      element.style.outlineOffset = '5px';
+    });
+  })();
+  </script>`;
+
+  const injectedHead = `${assets.head}<style>[data-json-field]:hover{outline:1px dashed #a08000}[data-json-field]:focus{outline:2px solid #a08000;background:#fffbea}</style>`;
+  preview = /<\/head\s*>/i.test(preview)
+    ? preview.replace(/<\/head\s*>/i, `${injectedHead}\n</head>`)
+    : `${injectedHead}\n${preview}`;
+  const injectedBody = `${assets.scripts}\n${bridge}`;
+  return /<\/body\s*>/i.test(preview)
+    ? preview.replace(/<\/body\s*>/i, `${injectedBody}\n</body>`)
+    : `${preview}\n${injectedBody}`;
+}
+
 export function renderPreviewHtml(
   markup: string,
   values: Record<string, string> = {},

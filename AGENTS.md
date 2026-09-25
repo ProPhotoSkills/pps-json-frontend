@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Render chapter JSON files against their matching repository HTML page when available, falling back to the synthetic renderer, so JSON previews preserve the published design.

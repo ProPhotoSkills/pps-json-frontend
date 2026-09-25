@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import type { EditableField } from "@/lib/divi";
 import { parseChapterName } from "@/lib/divi";
-import { renderFullPageHtml, type RepoPageAssets } from "@/lib/preview";
+import { renderFullPageHtml, renderJsonFilePreview, type RepoPageAssets } from "@/lib/preview";
 import type { HeadValues } from "@/lib/headSettings";
 import { BlockEditor } from "./BlockEditor";
 
@@ -19,6 +19,7 @@ type Props = {
   footerMarkups: string[];
   headValues: HeadValues;
   repoAssets: RepoPageAssets;
+  htmlTemplate: string;
   fields: EditableField[];
   values: Record<string, string>;
   original: Record<string, string>;
@@ -46,6 +47,7 @@ export function ChapterEditor({
   footerMarkups,
   headValues,
   repoAssets,
+  htmlTemplate,
   fields,
   values,
   original,
@@ -64,17 +66,21 @@ export function ChapterEditor({
   const [captureState, setCaptureState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [captureError, setCaptureError] = useState("");
   const renderPreview = () =>
-    markup ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets) : "";
+    htmlTemplate && documentKind === "chapter"
+      ? renderJsonFilePreview(htmlTemplate, fields, values, footerMarkups, headValues, repoAssets)
+      : markup
+        ? renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets)
+        : "";
   const [previewHtml, setPreviewHtml] = useState(renderPreview);
 
   useEffect(() => {
-    setPreviewHtml(renderFullPageHtml(markup, values, headerMarkups, footerMarkups, headValues, repoAssets));
+    setPreviewHtml(renderPreview());
     setCapture(null);
     setCaptureState("loading");
     setCaptureError("");
     // Änderungen aus der Vorschau dürfen das iframe beim Tippen nicht neu laden.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [path, markup, headerMarkups, footerMarkups, headValues, repoAssets]);
+  }, [path, markup, headerMarkups, footerMarkups, headValues, repoAssets, htmlTemplate]);
 
   useEffect(() => {
     const receiveEdit = (event: MessageEvent<unknown>) => {
@@ -150,7 +156,11 @@ export function ChapterEditor({
             variant="outline"
             onClick={() => {
               onReset();
-              setPreviewHtml(renderFullPageHtml(markup, original, headerMarkups, footerMarkups, headValues, repoAssets));
+              setPreviewHtml(
+                htmlTemplate && documentKind === "chapter"
+                  ? renderJsonFilePreview(htmlTemplate, fields, original, footerMarkups, headValues, repoAssets)
+                  : renderFullPageHtml(markup, original, headerMarkups, footerMarkups, headValues, repoAssets),
+              );
             }}
             disabled={!dirty || saving}
           >
